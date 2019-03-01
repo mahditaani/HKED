@@ -168,7 +168,7 @@ void MyMainFrame::Active(){
 		// ID
 		wcsimTriggerID = wcsimRootID->GetTrigger(nTrig);
 		int numTracksID = wcsimTriggerID->GetNtrack();
-		WCSimRootTrack * trackID = (WCSimRootTrack*) wcsimTriggerID->GetTracks()->At(2);
+		WCSimRootTrack * trackID = (WCSimRootTrack*) wcsimTriggerID->GetTracks()->At(0);
 
 		vtxX = wcsimTriggerID->GetVtx(0);
 		vtxY = wcsimTriggerID->GetVtx(1);
@@ -187,7 +187,7 @@ void MyMainFrame::Active(){
 		// ID
 		wcsimTriggerOD = wcsimRootOD->GetTrigger(nTrig);
 		int numTracksOD = wcsimTriggerOD->GetNtrack();
-		WCSimRootTrack * trackOD = (WCSimRootTrack*) wcsimTriggerOD->GetTracks()->At(2);
+		WCSimRootTrack * trackOD = (WCSimRootTrack*) wcsimTriggerOD->GetTracks()->At(0);
 
 		vtxXOD = wcsimTriggerOD->GetVtx(0);
 		vtxYOD = wcsimTriggerOD->GetVtx(1);
