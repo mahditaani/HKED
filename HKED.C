@@ -8,6 +8,7 @@
 #include "TFile.h"
 #include "TApplication.h"
 
+
 // WCSim Includes
 #include "WCSimRootEvent.hh"
 #include "WCSimRootGeom.hh"
@@ -29,6 +30,7 @@
 #include <TRootEmbeddedCanvas.h>
 #include <RQ_OBJECT.h>
 
+class TGRadioButton;
 
 // Ensure that you have set the WCSIMDIR environment variable so llib can load the libraries required
 /*
@@ -49,6 +51,8 @@ private:
    TGMainFrame         *fMain;
    TRootEmbeddedCanvas *fEcanvasID;
 	 TRootEmbeddedCanvas *fEcanvasOD;
+	 TGVerticalFrame *frameLeft;
+	 TGVerticalFrame *frameRight;
 	 TFile *inFile;
 	 int nEvent;
 	 int ev;
@@ -88,6 +92,9 @@ public:
 	 void Next();
 	 void Vision();
 	 void Active();
+	 void IDOnly();
+	 void ODOnly();
+	 void IDOD();
 };
 
 
@@ -551,14 +558,17 @@ MyMainFrame::MyMainFrame(string s,const TGWindow *p,UInt_t w,UInt_t h) {
 	 inFileName = s.c_str();
    // Create a main frame
    fMain = new TGMainFrame(p,w,h);
-
+	 //TGVerticalFrame *frameLeft = new TGVerticalFrame(fMain,100,200);
+	 //TGVerticalFrame *frameRight = new TGVerticalFrame(fMain,100,200);
+	 frameLeft = new TGVerticalFrame(fMain,100,200);
+	 frameRight = new TGVerticalFrame(fMain,100,200);
    // Create canvas widget
-   fEcanvasID = new TRootEmbeddedCanvas("EcanvasID",fMain,200,200);
-   fMain->AddFrame(fEcanvasID, new TGLayoutHints(kLHintsExpandX |
+   fEcanvasID = new TRootEmbeddedCanvas("EcanvasID",frameLeft,100,100);
+   frameLeft->AddFrame(fEcanvasID, new TGLayoutHints(kLHintsExpandX |
                    kLHintsExpandY, 10,10,10,1));
 
-	 fEcanvasOD = new TRootEmbeddedCanvas("EcanvasOD",fMain,200,200);
-	 fMain->AddFrame(fEcanvasOD, new TGLayoutHints(kLHintsExpandX |
+	 fEcanvasOD = new TRootEmbeddedCanvas("EcanvasOD",frameLeft,100,100);
+	 frameLeft->AddFrame(fEcanvasOD, new TGLayoutHints(kLHintsExpandX |
 									 kLHintsExpandY, 10,10,10,1));
 
    // Create a horizontal frame widget with buttons
@@ -575,8 +585,31 @@ MyMainFrame::MyMainFrame(string s,const TGWindow *p,UInt_t w,UInt_t h) {
                                 "gApplication->Terminate(0)");
    hframe->AddFrame(exit, new TGLayoutHints(kLHintsCenterX,
                                             5,5,3,4));
-   fMain->AddFrame(hframe, new TGLayoutHints(kLHintsCenterX,
-                                             2,2,2,2));
+
+	 TGRadioButton *radioButton[3];
+	 TGButtonGroup *br = new TGButtonGroup(frameRight,"Show Detector",kVerticalFrame);
+	 radioButton[0] = new TGRadioButton(br, new TGHotString("&ID"));
+	 radioButton[1] = new TGRadioButton(br, new TGHotString("&OD"));
+	 radioButton[2] = new TGRadioButton(br, new TGHotString("&ID and OD"));
+	 radioButton[2]->SetState(kButtonDown);
+	 br->Show();
+
+	 radioButton[0]->Connect("Clicked()","MyMainFrame",this,"IDOnly()");
+	 radioButton[1]->Connect("Clicked()","MyMainFrame",this,"ODOnly()");
+	 radioButton[2]->Connect("Clicked()","MyMainFrame",this,"IDOD()");
+
+
+
+	 frameRight->AddFrame(br, new TGLayoutHints(kLHintsTop,
+	 																				 5,5,3,4));
+
+	 fMain->AddFrame(frameLeft, new TGLayoutHints(kLHintsExpandX|kLHintsExpandY,
+																						 10,10,10,1));
+	 fMain->AddFrame(frameRight, new TGLayoutHints(kLHintsRight,
+																						 10,10,10,1));
+	 fMain->AddFrame(hframe, new TGLayoutHints(kLHintsRight,
+																						 2,2,2,2));
+
 
    // Set a name to the main frame
    fMain->SetWindowName("HK Event Display");
@@ -586,12 +619,29 @@ MyMainFrame::MyMainFrame(string s,const TGWindow *p,UInt_t w,UInt_t h) {
 
    // Initialize the layout algorithm
    fMain->Resize(fMain->GetDefaultSize());
+	 //frameLeft->Resize(frameLeft->GetDefaultSize());
 
    // Map main frame
    fMain->MapWindow();
 
 	 // Initialize other variables and plots
 	 Vision();
+
+}
+
+void MyMainFrame::IDOnly(){
+	frameLeft->ShowFrame(fEcanvasID);
+	frameLeft->HideFrame(fEcanvasOD);
+
+}
+void MyMainFrame::ODOnly(){
+	frameLeft->ShowFrame(fEcanvasOD);
+	frameLeft->HideFrame(fEcanvasID);
+
+}
+void MyMainFrame::IDOD(){
+	frameLeft->ShowFrame(fEcanvasID);
+	frameLeft->ShowFrame(fEcanvasOD);
 
 }
 void MyMainFrame::Prev() {
