@@ -80,6 +80,7 @@ private:
 	 TGHorizontalFrame *frameLeft;
 	 TGHorizontalFrame *frameRight;
 	 TGVerticalFrame *EventDetailsFrame;
+	 TGVerticalFrame *ButtonsFrame;
 	 TGLabel *text[14];
 	 std::string strings[14];
 	 TFile *inFile;
@@ -606,6 +607,7 @@ MyMainFrame::MyMainFrame(string s,const TGWindow *p,UInt_t w,UInt_t h) {
 	 frameLeft = new TGHorizontalFrame(fMain,200,200);
 	 frameRight = new TGHorizontalFrame(fMain,200,200);
 	 EventDetailsFrame = new TGVerticalFrame(frameRight,100,200);
+	 ButtonsFrame = new TGVerticalFrame(frameRight,100,200);
    // Create canvas widget
    fEcanvasID = new TRootEmbeddedCanvas("EcanvasID",frameLeft,100,100);
    frameLeft->AddFrame(fEcanvasID, new TGLayoutHints(kLHintsExpandX |
@@ -631,16 +633,16 @@ MyMainFrame::MyMainFrame(string s,const TGWindow *p,UInt_t w,UInt_t h) {
                                             5,5,3,4));
 
 	 TGRadioButton *radioButton[3];
-	 TGButtonGroup *br = new TGButtonGroup(frameRight,"Show Detector",kVerticalFrame);
+	 TGButtonGroup *br = new TGButtonGroup(ButtonsFrame,"Show Detector",kVerticalFrame);
 	 radioButton[0] = new TGRadioButton(br, new TGHotString("&ID"));
 	 radioButton[1] = new TGRadioButton(br, new TGHotString("&OD"));
 	 radioButton[2] = new TGRadioButton(br, new TGHotString("&ID and OD"));
-	 radioButton[2]->SetState(kButtonDown);
 	 br->Show();
 
 	 radioButton[0]->Connect("Clicked()","MyMainFrame",this,"IDOnly()");
 	 radioButton[1]->Connect("Clicked()","MyMainFrame",this,"ODOnly()");
 	 radioButton[2]->Connect("Clicked()","MyMainFrame",this,"IDOD()");
+
 
 
 	 strings[0] = "Event\t" + OutString(ev);
@@ -665,9 +667,11 @@ MyMainFrame::MyMainFrame(string s,const TGWindow *p,UInt_t w,UInt_t h) {
 	 }
 
 
-	 frameRight->AddFrame(EventDetailsFrame, new TGLayoutHints(kLHintsCenterX|kLHintsCenterY,0,0,0,0));
-	 frameRight->AddFrame(br, new TGLayoutHints(kLHintsLeft,
-	 																				 5,5,3,4));
+	 //frameRight->AddFrame(EventDetailsFrame, new TGLayoutHints(kLHintsCenterX|kLHintsCenterY,0,0,0,0));
+	 //frameRight->AddFrame(br, new TGLayoutHints(kLHintsLeft,5,5,3,4));
+	 ButtonsFrame->AddFrame(br, new TGLayoutHints(kLHintsRight,0,0,0,0));
+	 frameRight->AddFrame(EventDetailsFrame, new TGLayoutHints(kLHintsLeft,0,0,0,0));
+	 frameRight->AddFrame(ButtonsFrame, new TGLayoutHints(kLHintsRight,0,0,0,0));
 
 	 fMain->AddFrame(frameLeft, new TGLayoutHints(kLHintsExpandX|kLHintsExpandY,
 																						 10,10,10,1));
@@ -692,6 +696,12 @@ MyMainFrame::MyMainFrame(string s,const TGWindow *p,UInt_t w,UInt_t h) {
 
 	 // Initialize other variables and plots
 	 Vision();
+	 Active();
+	 UpdateText();
+	 if (!odOn && idOn){IDOnly();radioButton[2]->SetEnabled(kFALSE);radioButton[1]->SetEnabled(kFALSE);radioButton[0]->SetState(kButtonDown);}
+	 if (odOn && !idOn){ODOnly();radioButton[2]->SetEnabled(kFALSE);radioButton[0]->SetEnabled(kFALSE);radioButton[1]->SetState(kButtonDown);}
+	 if(!odOn && !idOn){gApplication->Terminate(0);}
+	 if(odOn && idOn){radioButton[2]->SetState(kButtonDown);}
 
 }
 
@@ -743,7 +753,7 @@ void MyMainFrame::Prev() {
 	}
 }
 void MyMainFrame::Next() {
-	if (ev >= nEvent ) {std::cout << "This is the last event!" <<std::endl;}
+	if (ev >= nEvent - 1 ) {std::cout << "This is the last event!" <<std::endl;}
 	else{
 		ev++;
 		Active();
