@@ -1,6 +1,7 @@
 // C++ Includes
 #include <iostream>
 #include <algorithm>
+#include <iomanip>
 
 // ROOT Includes
 #include "TH1F.h"
@@ -30,13 +31,38 @@
 #include <TRootEmbeddedCanvas.h>
 #include <RQ_OBJECT.h>
 
-class TGRadioButton;
+//class TGRadioButton;
 
 // Ensure that you have set the WCSIMDIR environment variable so llib can load the libraries required
 /*
 * To run this script just type:  root -l -x llib.C 'HKED.C("wcsim.root")'
 * or replace wcsim.root your input filename
 */
+std::string OutString(double n, int p = 2){
+
+
+	// Create an output string stream
+	std::ostringstream streamObj;
+
+	// Set Fixed -Point Notation
+	streamObj << std::fixed;
+
+	// Set precision to 2 digits
+	streamObj << std::setprecision(p);
+
+	//Add double to stream
+	streamObj << n;
+
+	// Get string from output string stream
+	std::string strObj = streamObj.str();
+	return strObj;
+}
+std::string OutString(float n , int p = 2){
+	return OutString((double)n);
+}
+std::string OutString(int n , int p = 2){
+	return OutString((double)n);
+}
 
 bool checkPMT(int pmt, int low, int high) {
 
@@ -51,11 +77,14 @@ private:
    TGMainFrame         *fMain;
    TRootEmbeddedCanvas *fEcanvasID;
 	 TRootEmbeddedCanvas *fEcanvasOD;
-	 TGVerticalFrame *frameLeft;
-	 TGVerticalFrame *frameRight;
+	 TGHorizontalFrame *frameLeft;
+	 TGHorizontalFrame *frameRight;
+	 TGVerticalFrame *EventDetailsFrame;
+	 TGLabel *text[14];
+	 std::string strings[14];
 	 TFile *inFile;
 	 int nEvent;
-	 int ev;
+	 int ev =0;
 	 TTree* geoTree;
 	 WCSimRootGeom *geo;
 	 TBranch *branchG;
@@ -82,9 +111,24 @@ private:
 	 bool odOn;
 	 const int txtW = 20;
 	 const int numW = 10;
-	 int verbosity;
+	 int verbosity = 0;
 	 const char *inFileName;
 	 std::string fname;
+	 double ene = 0;
+	 double vtxx = 0;
+	 double vtxy = 0;
+	 double vtxz = 0;
+	 double dirx = 0;
+	 double diry = 0;
+	 double dirz = 0;
+	 int pmthitdigiid = 0;
+	 int pmthitrawid = 0;
+	 int hitdigiid = 0;
+	 int hitrawid = 0;
+	 int pmthitdigiod = 0;
+	 int pmthitrawod = 0;
+	 int hitdigiod = 0;
+	 int hitrawod = 0;
 public:
    MyMainFrame(std::string s, const TGWindow *p,UInt_t w,UInt_t h);
    virtual ~MyMainFrame();
@@ -95,6 +139,7 @@ public:
 	 void IDOnly();
 	 void ODOnly();
 	 void IDOD();
+	 void UpdateText();
 };
 
 
@@ -131,7 +176,7 @@ void MyMainFrame::Active(){
 
 
 
-	string command;
+	std::string command;
 	wcsimTree->GetEntry(ev);
 	wcsimTriggerID = wcsimRootID->GetTrigger(0);
 	int numTriggersID = wcsimRootID->GetNumberOfEvents();
@@ -238,8 +283,7 @@ void MyMainFrame::Active(){
 		tube[0] = geo->GetPMT(tubeID).GetPosition(0);
 		tube[1] = geo->GetPMT(tubeID).GetPosition(1);
 		tube[2] = geo->GetPMT(tubeID).GetPosition(2);
-		//if (i < 10 ) {std::cout << "ID: " << tubeID << std::endl;}
-		//if (i < 10 ) {std::cout << "PMT: (ID X Y Z)" <<"\t"<<i<<"\t"<<tube[0]<<"\t"<<tube[1]<<"\t"<<tube[2]<<std::endl;}
+
 		//Top ID
 		if ( cylLoc == 0){
 			displayID->Fill(tube[0],tube[1] + RadiusID + HeightID/2,tmpDigiHitsID);
@@ -256,8 +300,6 @@ void MyMainFrame::Active(){
 			if (tube[0]<0) length *= -1;
 			displayID->Fill( length, tube[2],tmpDigiHitsID);
 		}
-
-		//if (i < 10 ) {std::cout << "PMT: (ID X Y Z)" <<"\t"<<tubeID<<"\t"<<tube[0]<<"\t"<<tube[1]<<"\t"<<tube[2]<<std::endl;}
 
 
 		} // End of for loop working out number of digitized hits in PMTs
@@ -276,8 +318,7 @@ void MyMainFrame::Active(){
 		tube[0] = geo->GetPMT(tubeOD).GetPosition(0);
 		tube[1] = geo->GetPMT(tubeOD).GetPosition(1);
 		tube[2] = geo->GetPMT(tubeOD).GetPosition(2);
-		//if (i < 10 ) {std::cout << "ID: " << tubeOD << std::endl;}
-		//if (i < 500 ) {std::cout << "PMT: (ID X Y Z CYLLOC)" <<"\t"<<i<<"\t"<<tube[0]<<"\t"<<tube[1]<<"\t"<<tube[2]<<"\t"<<cylLoc<<std::endl;}
+
 		//Top OD
 		if ( cylLoc == 5){
 			displayOD->Fill(tube[0],tube[1] + RadiusOD + HeightOD/2 + 100,tmpDigiHitsOD);
@@ -288,7 +329,7 @@ void MyMainFrame::Active(){
 		}
 		//Barrel OD
 		else {
-			//std::cout << "BARRRREEL:\t" << tmpDigiHitsOD << std::endl;
+
 			double l = sqrt( pow((0 - tube[0]),2) + pow((-RadiusOD - tube[1]),2));
 			double angle = 2*asin(l/(2*RadiusOD));
 			double length = angle*RadiusOD ;
@@ -296,7 +337,6 @@ void MyMainFrame::Active(){
 			displayOD->Fill( length, tube[2],tmpDigiHitsOD);
 		}
 
-		//if (i < 10 ) {std::cout << "PMT: (ID X Y Z)" <<"\t"<<tubeOD<<"\t"<<tube[0]<<"\t"<<tube[1]<<"\t"<<tube[2]<<std::endl;}
 
 
 		} // End of for loop working out number of digitized hits in PMTs
@@ -327,14 +367,27 @@ void MyMainFrame::Active(){
 	if (idOn){ canvasID->cd(); displayID->Draw("COLZ"); canvasID->Update(); }
 
 
+	ene = energy;
+	vtxx = vtxX;
+	vtxy = vtxY;
+	vtxz = vtxZ;
+	dirx = dirX;
+	diry = dirY;
+	dirz = dirZ;
+	pmthitdigiid = numPMTsDigiHitID;
+	pmthitrawid = numPMTsHitID;
+	hitdigiid = digiHitsID;
+	hitrawid = rawHitsID;
+	pmthitdigiod = numPMTsDigiHitOD;
+	pmthitrawod = numPMTsHitOD;
+	hitdigiod = digiHitsOD;
+	hitrawod = rawHitsOD;
+
 }
 
 
 
 void MyMainFrame::Vision(){
-
-//	loadlibs(); // Load the required libraries
-	//TApplication app("Dislay", 0, 0);
 
 	gStyle->SetOptStat(0); // Remove stats from our histograms
 	// Some nicely formatted text options
@@ -388,13 +441,8 @@ void MyMainFrame::Vision(){
 	geoTree->GetEntry(0);
 
 
-	//TApplication app("Dislay", 0, 0);
-	//canvasID = new TCanvas("EventID","EventID");
-	//canvasOD = new TCanvas("EventOD","EventOD");
 	canvasID = fEcanvasID->GetCanvas();
 	canvasOD = fEcanvasOD->GetCanvas();
-	//canvasID->ResizeOpaque();
-	//canvasOD->ResizeOpaque();
 
 
 	// Plot parameters
@@ -512,8 +560,6 @@ void MyMainFrame::Vision(){
 			blankOD->Fill( length, tbe[2],FILLW);
 		}
 
-
-		//if (i < 10 ) {std::cout << "PMT: (ID X Y Z loc)" <<"\t"<<i<<"\t"<<tbe[0]<<"\t"<<tbe[1]<<"\t"<<tbe[2]<<"\t"<< geo->GetPMT(i).GetCylLoc()<<std::endl;}
 	} // End of for loop filling OD PMT hits
 
 	// Fill up the cylinder shape for ID hits
@@ -542,7 +588,6 @@ void MyMainFrame::Vision(){
 		}
 
 
-		//if (i < 10 ) {std::cout << "PMT: (ID X Y Z loc)" <<"\t"<<i<<"\t"<<tbe[0]<<"\t"<<tbe[1]<<"\t"<<tbe[2]<<"\t"<< geo->GetPMT(i).GetCylLoc()<<std::endl;}
 	} // End of for loop filling ID PMT hits
 
 
@@ -553,15 +598,14 @@ void MyMainFrame::Vision(){
 
 MyMainFrame::MyMainFrame(string s,const TGWindow *p,UInt_t w,UInt_t h) {
 
-	//DEBUG
-	std::cout << "MainFrame" << std::endl;
 	 inFileName = s.c_str();
    // Create a main frame
    fMain = new TGMainFrame(p,w,h);
-	 //TGVerticalFrame *frameLeft = new TGVerticalFrame(fMain,100,200);
-	 //TGVerticalFrame *frameRight = new TGVerticalFrame(fMain,100,200);
-	 frameLeft = new TGVerticalFrame(fMain,100,200);
-	 frameRight = new TGVerticalFrame(fMain,100,200);
+	 TQObject::Connect("MyMainFrame", "CloseWindow()", 0, 0, "gApplication->Terminate(0)");
+
+	 frameLeft = new TGHorizontalFrame(fMain,200,200);
+	 frameRight = new TGHorizontalFrame(fMain,200,200);
+	 EventDetailsFrame = new TGVerticalFrame(frameRight,100,200);
    // Create canvas widget
    fEcanvasID = new TRootEmbeddedCanvas("EcanvasID",frameLeft,100,100);
    frameLeft->AddFrame(fEcanvasID, new TGLayoutHints(kLHintsExpandX |
@@ -599,15 +643,37 @@ MyMainFrame::MyMainFrame(string s,const TGWindow *p,UInt_t w,UInt_t h) {
 	 radioButton[2]->Connect("Clicked()","MyMainFrame",this,"IDOD()");
 
 
+	 strings[0] = "Event\t" + OutString(ev);
+	 strings[1] = "Energy\t" + OutString(ene) + "MeV";
+	 strings[2] = "vtx [cm]\t" + OutString(vtxx) + ", " + OutString(vtxy) + ", " + OutString(vtxz);
+	 strings[3] = "dir [norm]\t" + OutString(dirx) + ", " + OutString(diry) + ", " + OutString(dirz);
+	 strings[4] = "---------ID-------------";
+	 strings[5] = "PMTs Hit Digi\t"+OutString(pmthitdigiid);
+	 strings[6] = "PMTs Hit Raw\t"+OutString(pmthitrawid);
+	 strings[7] = "Digi Hits\t"+OutString(hitdigiid);
+	 strings[8] = "Raw Hits\t"+OutString(hitrawid);
+	 strings[9] = "---------OD-------------";
+	 strings[10] = "PMTs Hit Digi\t"+OutString(pmthitdigiod);
+	 strings[11] = "PMTs Hit Raw\t"+OutString(pmthitrawod);
+	 strings[12] = "Digi Hits\t"+OutString(hitdigiod);
+	 strings[13] = "Raw Hits\t"+OutString(hitrawod);
 
-	 frameRight->AddFrame(br, new TGLayoutHints(kLHintsTop,
+	 for (int gh = 0; gh < 14; gh++){
+
+		 text[gh] = new TGLabel(EventDetailsFrame, strings[gh].c_str());
+		 EventDetailsFrame->AddFrame(text[gh], new TGLayoutHints(kLHintsCenterX,1,1,1,1));
+	 }
+
+
+	 frameRight->AddFrame(EventDetailsFrame, new TGLayoutHints(kLHintsCenterX|kLHintsCenterY,0,0,0,0));
+	 frameRight->AddFrame(br, new TGLayoutHints(kLHintsLeft,
 	 																				 5,5,3,4));
 
 	 fMain->AddFrame(frameLeft, new TGLayoutHints(kLHintsExpandX|kLHintsExpandY,
 																						 10,10,10,1));
-	 fMain->AddFrame(frameRight, new TGLayoutHints(kLHintsRight,
+	 fMain->AddFrame(frameRight, new TGLayoutHints(kLHintsCenterX| kLHintsBottom,
 																						 10,10,10,1));
-	 fMain->AddFrame(hframe, new TGLayoutHints(kLHintsRight,
+	 fMain->AddFrame(hframe, new TGLayoutHints(kLHintsBottom,
 																						 2,2,2,2));
 
 
@@ -629,6 +695,30 @@ MyMainFrame::MyMainFrame(string s,const TGWindow *p,UInt_t w,UInt_t h) {
 
 }
 
+void MyMainFrame::UpdateText(){
+
+	strings[0] = "Event\t" + OutString(ev);
+	strings[1] = "Energy\t" + OutString(ene) + "MeV";
+	strings[2] = "vtx [cm]\t" + OutString(vtxx) + ", " + OutString(vtxy) + ", " + OutString(vtxz);
+	strings[3] = "dir [norm]\t" + OutString(dirx) + ", " + OutString(diry) + ", " + OutString(dirz);
+	strings[4] = "---------ID-------------";
+	strings[5] = "PMTs Hit Digi\t"+OutString(pmthitdigiid);
+	strings[6] = "PMTs Hit Raw\t"+OutString(pmthitrawid);
+	strings[7] = "Digi Hits\t"+OutString(hitdigiid);
+	strings[8] = "Raw Hits\t"+OutString(hitrawid);
+	strings[9] = "---------OD-------------";
+	strings[10] = "PMTs Hit Digi\t"+OutString(pmthitdigiod);
+	strings[11] = "PMTs Hit Raw\t"+OutString(pmthitrawod);
+	strings[12] = "Digi Hits\t"+OutString(hitdigiod);
+	strings[13] = "Raw Hits\t"+OutString(hitrawod);
+
+	for (int gh = 0; gh < 14; gh++){
+
+		text[gh]->ChangeText(strings[gh].c_str());
+	}
+}
+
+
 void MyMainFrame::IDOnly(){
 	frameLeft->ShowFrame(fEcanvasID);
 	frameLeft->HideFrame(fEcanvasOD);
@@ -649,6 +739,7 @@ void MyMainFrame::Prev() {
 	else{
 		ev--;
 		Active();
+		UpdateText();
 	}
 }
 void MyMainFrame::Next() {
@@ -656,6 +747,7 @@ void MyMainFrame::Next() {
 	else{
 		ev++;
 		Active();
+		UpdateText();
 	}
 }
 
@@ -665,6 +757,7 @@ MyMainFrame::~MyMainFrame() {
    delete fMain;
 }
 void HKED(std::string file) {
+
    // Popup the GUI...
-   new MyMainFrame(file, gClient->GetRoot(), 200, 200);
+   new MyMainFrame(file, gClient->GetRoot(), 800, 600);
 }
