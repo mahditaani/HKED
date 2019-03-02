@@ -58,10 +58,10 @@ std::string OutString(double n, int p = 2){
 	return strObj;
 }
 std::string OutString(float n , int p = 2){
-	return OutString((double)n);
+	return OutString((double)n,p);
 }
-std::string OutString(int n , int p = 2){
-	return OutString((double)n);
+std::string OutString(int n , int p = 0){
+	return OutString((double)n, p);
 }
 
 bool checkPMT(int pmt, int low, int high) {
@@ -77,11 +77,18 @@ private:
    TGMainFrame         *fMain;
    TRootEmbeddedCanvas *fEcanvasID;
 	 TRootEmbeddedCanvas *fEcanvasOD;
-	 TGHorizontalFrame *frameLeft;
-	 TGHorizontalFrame *frameRight;
-	 TGVerticalFrame *EventDetailsFrame;
+	 TGHorizontalFrame *TopFrame;
+	 TGVerticalFrame *BottomLeftFrame;
+	 TGVerticalFrame *BottomRightFrame;
 	 TGVerticalFrame *ButtonsFrame;
-	 TGLabel *text[14];
+	 //TGGroupFrame *RadioGroup;
+	 TGButtonGroup *RadioGroup;
+	 TGRadioButton *radioButton[3];
+	 TGTextButton *ButtonNext;
+	 TGTextButton *ButtonPrev;
+	 TGTextButton *ButtonSave;
+	 TGTextButton *ButtonExit;
+	 TGTextEdit *TextBox;
 	 std::string strings[14];
 	 TFile *inFile;
 	 int nEvent;
@@ -130,8 +137,13 @@ private:
 	 int pmthitrawod = 0;
 	 int hitdigiod = 0;
 	 int hitrawod = 0;
+	 int TopFrameHeight;
+	 int TopFrameWidth;
+	 int TopFrameX;
+	 int TopFrameY;
+	 int stringLength = 14;
 public:
-   MyMainFrame(std::string s, const TGWindow *p,UInt_t w,UInt_t h);
+	MyMainFrame(std::string s);
    virtual ~MyMainFrame();
    void Prev();
 	 void Next();
@@ -140,7 +152,10 @@ public:
 	 void IDOnly();
 	 void ODOnly();
 	 void IDOD();
+	 void SaveCanvas();
+	 void SetStrings();
 	 void UpdateText();
+
 };
 
 
@@ -364,8 +379,15 @@ void MyMainFrame::Active(){
 
 	} // End of loop over triggers
 
-	if (odOn){ canvasOD->cd(); displayOD->Draw("COLZ"); canvasOD->Update(); }
-	if (idOn){ canvasID->cd(); displayID->Draw("COLZ"); canvasID->Update(); }
+
+	if (odOn){
+		TLegend *legOD = new TLegend(0.7,0.7,1,1);legOD->SetHeader("OD","C");
+		canvasOD->cd(); displayOD->Draw("COLZ"); legOD->Draw("same"); canvasOD->Update();
+	 }
+	if (idOn){
+		TLegend *legID = new TLegend(0.7,0.7,1,1);legID->SetHeader("ID","C");
+		canvasID->cd(); displayID->Draw("COLZ"); legID->Draw("same"); canvasID->Update();
+	}
 
 
 	ene = energy;
@@ -445,6 +467,15 @@ void MyMainFrame::Vision(){
 	canvasID = fEcanvasID->GetCanvas();
 	canvasOD = fEcanvasOD->GetCanvas();
 
+	canvasID->SetRightMargin(0.00);
+	canvasID->SetLeftMargin(0.);
+	canvasID->SetTopMargin(0.00);
+	canvasID->SetBottomMargin(0.);
+	canvasOD->SetRightMargin(0.);
+	canvasOD->SetLeftMargin(0.);
+	canvasOD->SetTopMargin(0.);
+	canvasOD->SetBottomMargin(0.);
+
 
 	// Plot parameters
 	int nBinID = 100; // Granularity for ID plot
@@ -470,8 +501,19 @@ void MyMainFrame::Vision(){
 
 	displayID = new TH2D ("displayID", "displayID", nBinID, -dimX, dimX, nBinID, -dimZ, dimZ);
 	displayOD = new TH2D ("displayOD", "displayOD", nBinOD, -dimX, dimX, nBinOD, -dimZ, dimZ);
-	blankID = new TH2D ("blankID", "ID", nBinID, -dimX, dimX, nBinID, -dimZ, dimZ);
-	blankOD = new TH2D ("blankOD", "OD", nBinOD, -dimX, dimX, nBinOD, -dimZ, dimZ);
+	blankID = new TH2D ("blankID", "", nBinID, -dimX, dimX, nBinID, -dimZ, dimZ);
+	blankOD = new TH2D ("blankOD", "", nBinOD, -dimX, dimX, nBinOD, -dimZ, dimZ);
+
+	// Remove Axis Lables
+	blankID->GetXaxis()->SetLabelOffset(999);
+  blankID->GetXaxis()->SetLabelSize(0);
+	blankOD->GetXaxis()->SetLabelOffset(999);
+	blankOD->GetXaxis()->SetLabelSize(0);
+	blankID->GetYaxis()->SetLabelOffset(999);
+	blankID->GetYaxis()->SetLabelSize(0);
+	blankOD->GetYaxis()->SetLabelOffset(999);
+	blankOD->GetYaxis()->SetLabelSize(0);
+
 
 
 	// Find a barrel pmt
@@ -596,48 +638,132 @@ void MyMainFrame::Vision(){
 
 
 
-
-MyMainFrame::MyMainFrame(string s,const TGWindow *p,UInt_t w,UInt_t h) {
+MyMainFrame::MyMainFrame(string s) {
 
 	 inFileName = s.c_str();
+
    // Create a main frame
-   fMain = new TGMainFrame(p,w,h);
-	 TQObject::Connect("MyMainFrame", "CloseWindow()", 0, 0, "gApplication->Terminate(0)");
+	 fMain = new TGMainFrame(gClient->GetRoot(),10,10,kMainFrame | kVerticalFrame);
+	 fMain->SetName("EventDisplay");
+	 fMain->SetLayoutBroken(kTRUE);
+	 fMain->SetEditable(kFALSE);
 
-	 frameLeft = new TGHorizontalFrame(fMain,200,200);
-	 frameRight = new TGHorizontalFrame(fMain,200,200);
-	 EventDetailsFrame = new TGVerticalFrame(frameRight,100,200);
-	 ButtonsFrame = new TGVerticalFrame(frameRight,100,200);
-   // Create canvas widget
-   fEcanvasID = new TRootEmbeddedCanvas("EcanvasID",frameLeft,100,100);
-   frameLeft->AddFrame(fEcanvasID, new TGLayoutHints(kLHintsExpandX |
-                   kLHintsExpandY, 10,10,10,1));
+	 // top frame
+   TopFrame = new TGHorizontalFrame(fMain,608,432,kHorizontalFrame);
+   TopFrame->SetName("TopFrame");
+   TopFrame->SetLayoutBroken(kTRUE);
 
-	 fEcanvasOD = new TRootEmbeddedCanvas("EcanvasOD",frameLeft,100,100);
-	 frameLeft->AddFrame(fEcanvasOD, new TGLayoutHints(kLHintsExpandX |
-									 kLHintsExpandY, 10,10,10,1));
+   fMain->AddFrame(TopFrame, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+   TopFrame->MoveResize(8,8,608,432);
 
-   // Create a horizontal frame widget with buttons
-   TGHorizontalFrame *hframe = new TGHorizontalFrame(fMain,200,40);
-	 TGTextButton *prev = new TGTextButton(hframe,"&Prev");
-   prev->Connect("Clicked()","MyMainFrame",this,"Prev()");
-   hframe->AddFrame(prev, new TGLayoutHints(kLHintsCenterX,
-                                            5,5,3,4));
-   TGTextButton *next = new TGTextButton(hframe,"&Next");
-   next->Connect("Clicked()","MyMainFrame",this,"Next()");
-   hframe->AddFrame(next, new TGLayoutHints(kLHintsCenterX,
-                                            5,5,3,4));
-   TGTextButton *exit = new TGTextButton(hframe,"&Exit",
-                                "gApplication->Terminate(0)");
-   hframe->AddFrame(exit, new TGLayoutHints(kLHintsCenterX,
-                                            5,5,3,4));
+	 TopFrameX = TopFrame->GetX();
+	 TopFrameY = TopFrame->GetY();
+	 TopFrameWidth = TopFrame->GetWidth();
+	 TopFrameHeight = TopFrame->GetHeight();
 
-	 TGRadioButton *radioButton[3];
-	 TGButtonGroup *br = new TGButtonGroup(ButtonsFrame,"Show Detector",kVerticalFrame);
-	 radioButton[0] = new TGRadioButton(br, new TGHotString("&ID"));
-	 radioButton[1] = new TGRadioButton(br, new TGHotString("&OD"));
-	 radioButton[2] = new TGRadioButton(br, new TGHotString("&ID and OD"));
-	 br->Show();
+   // Create canvas widget to go in the top frame
+   fEcanvasID = new TRootEmbeddedCanvas("EcanvasID",TopFrame,100,100);
+	 fEcanvasID->SetAutoFit();
+   TopFrame->AddFrame(fEcanvasID, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 10,10,10,1));
+
+	 fEcanvasOD = new TRootEmbeddedCanvas("EcanvasOD",TopFrame,100,100);
+	 TopFrame->AddFrame(fEcanvasOD, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 10,10,10,1));
+	 fEcanvasOD->SetAutoFit();
+
+	 // Bottom Left frame
+   BottomLeftFrame = new TGVerticalFrame(fMain,384,336,kVerticalFrame);
+   BottomLeftFrame->SetName("BottomLeftFrame");
+   BottomLeftFrame->SetLayoutBroken(kTRUE);
+
+	 // Text box to display event details
+   TextBox = new TGTextEdit(BottomLeftFrame,368,320);
+   TextBox->SetName("TextBox");
+   BottomLeftFrame->AddFrame(TextBox, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+   TextBox->MoveResize(8,8,368,320);
+	 TextBox->SetReadOnly();
+
+   fMain->AddFrame(BottomLeftFrame, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+   BottomLeftFrame->MoveResize(8,448,384,336);
+
+	 // Bottom Right Frame
+   BottomRightFrame = new TGVerticalFrame(fMain,216,336,kVerticalFrame);
+   BottomRightFrame->SetName("BottomRightFrame");
+   BottomRightFrame->SetLayoutBroken(kTRUE);
+
+	 // Buttons on bottom right frame
+	 RadioGroup = new TGButtonGroup(BottomRightFrame,"Show Detector");
+
+
+	 radioButton[0] = new TGRadioButton(RadioGroup, "ID");
+	 radioButton[0]->SetToolTipText("Displays the ID only");
+	 RadioGroup->AddFrame(radioButton[0], new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+
+	 radioButton[1] = new TGRadioButton(RadioGroup, new TGHotString("&OD"));
+	 radioButton[1]->SetToolTipText("Displays the OD only");
+	 RadioGroup->AddFrame(radioButton[1], new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+
+	 radioButton[2] = new TGRadioButton(RadioGroup, new TGHotString("&ID and OD"));
+	 radioButton[2]->SetToolTipText("Displays the ID and OD");
+   RadioGroup->AddFrame(radioButton[2], new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+
+   RadioGroup->Resize(176,184);
+   BottomRightFrame->AddFrame(RadioGroup, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+   RadioGroup->MoveResize(24,0,176,184);
+
+   ButtonNext = new TGTextButton(BottomRightFrame,"Next",-1,TGTextButton::GetDefaultGC()(),TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
+	 ButtonNext->SetToolTipText("Displays the next event");
+   ButtonNext->SetTextJustify(36);
+   ButtonNext->SetMargins(0,0,0,0);
+   ButtonNext->SetWrapLength(-1);
+   ButtonNext->Resize(105,24);
+   BottomRightFrame->AddFrame(ButtonNext, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+   ButtonNext->MoveResize(48,200,105,24);
+
+   ButtonPrev = new TGTextButton(BottomRightFrame,"Previous",-1,TGTextButton::GetDefaultGC()(),TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
+	 ButtonPrev->SetToolTipText("Displays the previous event");
+   ButtonPrev->SetTextJustify(36);
+   ButtonPrev->SetMargins(0,0,0,0);
+   ButtonPrev->SetWrapLength(-1);
+   ButtonPrev->Resize(105,24);
+   BottomRightFrame->AddFrame(ButtonPrev, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+   ButtonPrev->MoveResize(48,232,105,24);
+
+   ButtonSave = new TGTextButton(BottomRightFrame,"Save",-1,TGTextButton::GetDefaultGC()(),TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
+	 ButtonSave->SetToolTipText("Saves the displays, as you see them, to png files");
+   ButtonSave->SetTextJustify(36);
+   ButtonSave->SetMargins(0,0,0,0);
+   ButtonSave->SetWrapLength(-1);
+   ButtonSave->Resize(105,24);
+   BottomRightFrame->AddFrame(ButtonSave, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+   ButtonSave->MoveResize(48,264,105,24);
+
+
+	 ButtonExit = new TGTextButton(BottomRightFrame,"Exit","gApplication->Terminate(0)",-1,TGTextButton::GetDefaultGC()(),TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
+   ButtonExit->SetTextJustify(36);
+   ButtonExit->SetMargins(0,0,0,0);
+   ButtonExit->SetWrapLength(-1);
+   ButtonExit->Resize(105,24);
+   BottomRightFrame->AddFrame(ButtonExit, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+   ButtonExit->MoveResize(48,296,105,24);
+
+	 fMain->AddFrame(BottomRightFrame, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+   BottomRightFrame->MoveResize(400,448,216,336);
+
+   fMain->SetMWMHints(kMWMDecorAll,
+                        kMWMFuncAll,
+                        kMWMInputModeless);
+   fMain->MapSubwindows();
+
+   fMain->Resize(fMain->GetDefaultSize());
+   fMain->MapWindow();
+   fMain->Resize(620,792);
+
+
+	 // Button Commands
+   ButtonPrev->Connect("Clicked()","MyMainFrame",this,"Prev()");
+   ButtonNext->Connect("Clicked()","MyMainFrame",this,"Next()");
+	 ButtonSave->Connect("Clicked()","MyMainFrame",this,"SaveCanvas()");
+
 
 	 radioButton[0]->Connect("Clicked()","MyMainFrame",this,"IDOnly()");
 	 radioButton[1]->Connect("Clicked()","MyMainFrame",this,"ODOnly()");
@@ -645,41 +771,16 @@ MyMainFrame::MyMainFrame(string s,const TGWindow *p,UInt_t w,UInt_t h) {
 
 
 
-	 strings[0] = "Event\t" + OutString(ev);
-	 strings[1] = "Energy\t" + OutString(ene) + "MeV";
-	 strings[2] = "vtx [cm]\t" + OutString(vtxx) + ", " + OutString(vtxy) + ", " + OutString(vtxz);
-	 strings[3] = "dir [norm]\t" + OutString(dirx) + ", " + OutString(diry) + ", " + OutString(dirz);
-	 strings[4] = "---------ID-------------";
-	 strings[5] = "PMTs Hit Digi\t"+OutString(pmthitdigiid);
-	 strings[6] = "PMTs Hit Raw\t"+OutString(pmthitrawid);
-	 strings[7] = "Digi Hits\t"+OutString(hitdigiid);
-	 strings[8] = "Raw Hits\t"+OutString(hitrawid);
-	 strings[9] = "---------OD-------------";
-	 strings[10] = "PMTs Hit Digi\t"+OutString(pmthitdigiod);
-	 strings[11] = "PMTs Hit Raw\t"+OutString(pmthitrawod);
-	 strings[12] = "Digi Hits\t"+OutString(hitdigiod);
-	 strings[13] = "Raw Hits\t"+OutString(hitrawod);
+	 SetStrings(); // Format the text to be seen in the bottom left
 
-	 for (int gh = 0; gh < 14; gh++){
 
-		 text[gh] = new TGLabel(EventDetailsFrame, strings[gh].c_str());
-		 EventDetailsFrame->AddFrame(text[gh], new TGLayoutHints(kLHintsCenterX,1,1,1,1));
+	 for (int gh = 0; gh < 14; gh++){ // Add the text to the text box
+
+		 TextBox->AddLineFast(strings[gh].c_str());
+
 	 }
 
-
-	 //frameRight->AddFrame(EventDetailsFrame, new TGLayoutHints(kLHintsCenterX|kLHintsCenterY,0,0,0,0));
-	 //frameRight->AddFrame(br, new TGLayoutHints(kLHintsLeft,5,5,3,4));
-	 ButtonsFrame->AddFrame(br, new TGLayoutHints(kLHintsRight,0,0,0,0));
-	 frameRight->AddFrame(EventDetailsFrame, new TGLayoutHints(kLHintsLeft,0,0,0,0));
-	 frameRight->AddFrame(ButtonsFrame, new TGLayoutHints(kLHintsRight,0,0,0,0));
-
-	 fMain->AddFrame(frameLeft, new TGLayoutHints(kLHintsExpandX|kLHintsExpandY,
-																						 10,10,10,1));
-	 fMain->AddFrame(frameRight, new TGLayoutHints(kLHintsCenterX| kLHintsBottom,
-																						 10,10,10,1));
-	 fMain->AddFrame(hframe, new TGLayoutHints(kLHintsBottom,
-																						 2,2,2,2));
-
+	 TextBox->Update(); // Update the text in the box
 
    // Set a name to the main frame
    fMain->SetWindowName("HK Event Display");
@@ -689,7 +790,7 @@ MyMainFrame::MyMainFrame(string s,const TGWindow *p,UInt_t w,UInt_t h) {
 
    // Initialize the layout algorithm
    fMain->Resize(fMain->GetDefaultSize());
-	 //frameLeft->Resize(frameLeft->GetDefaultSize());
+
 
    // Map main frame
    fMain->MapWindow();
@@ -698,54 +799,106 @@ MyMainFrame::MyMainFrame(string s,const TGWindow *p,UInt_t w,UInt_t h) {
 	 Vision();
 	 Active();
 	 UpdateText();
-	 if (!odOn && idOn){IDOnly();radioButton[2]->SetEnabled(kFALSE);radioButton[1]->SetEnabled(kFALSE);radioButton[0]->SetState(kButtonDown);}
-	 if (odOn && !idOn){ODOnly();radioButton[2]->SetEnabled(kFALSE);radioButton[0]->SetEnabled(kFALSE);radioButton[1]->SetState(kButtonDown);}
+
+	 // Set default states and disable options if part of the detector was not built.
+	 if (!odOn && idOn){IDOnly(); radioButton[2]->SetEnabled(kFALSE);radioButton[1]->SetEnabled(kFALSE);radioButton[0]->SetState(kButtonDown);}
+	 if (odOn && !idOn){ODOnly(); radioButton[2]->SetEnabled(kFALSE);radioButton[0]->SetEnabled(kFALSE);radioButton[1]->SetState(kButtonDown);}
 	 if(!odOn && !idOn){gApplication->Terminate(0);}
-	 if(odOn && idOn){radioButton[2]->SetState(kButtonDown);}
+	 if(odOn && idOn){IDOD(); radioButton[2]->SetState(kButtonDown);}
 
 }
 
-void MyMainFrame::UpdateText(){
+void MyMainFrame::SetStrings(){
 
-	strings[0] = "Event\t" + OutString(ev);
-	strings[1] = "Energy\t" + OutString(ene) + "MeV";
-	strings[2] = "vtx [cm]\t" + OutString(vtxx) + ", " + OutString(vtxy) + ", " + OutString(vtxz);
-	strings[3] = "dir [norm]\t" + OutString(dirx) + ", " + OutString(diry) + ", " + OutString(dirz);
+
+	strings[0] = "Event";
+	strings[0].insert(strings[0].end(), stringLength - strings[0].length(), '.');
+	strings[0] = strings[0] + ": " + OutString(ev);
+
+	strings[1] = "Energy";
+	strings[1].insert(strings[1].end(), stringLength - strings[1].length(), '.');
+	strings[1] = strings[1] + ": " + OutString(ene) + " MeV";
+
+	strings[2] = "vtx [cm]";
+	strings[2].insert(strings[2].end(), stringLength - strings[2].length(), '.');
+	strings[2] = strings[2] + ": " + OutString(vtxx) + ", " + OutString(vtxy) + ", " + OutString(vtxz);
+
+	strings[3] = "dir [norm]";
+	strings[3].insert(strings[3].end(), stringLength - strings[3].length(), '.');
+	strings[3] = strings[3] + ": " + OutString(dirx) + ", " + OutString(diry) + ", " + OutString(dirz);
+
 	strings[4] = "---------ID-------------";
-	strings[5] = "PMTs Hit Digi\t"+OutString(pmthitdigiid);
-	strings[6] = "PMTs Hit Raw\t"+OutString(pmthitrawid);
-	strings[7] = "Digi Hits\t"+OutString(hitdigiid);
-	strings[8] = "Raw Hits\t"+OutString(hitrawid);
-	strings[9] = "---------OD-------------";
-	strings[10] = "PMTs Hit Digi\t"+OutString(pmthitdigiod);
-	strings[11] = "PMTs Hit Raw\t"+OutString(pmthitrawod);
-	strings[12] = "Digi Hits\t"+OutString(hitdigiod);
-	strings[13] = "Raw Hits\t"+OutString(hitrawod);
 
+	strings[5] = "PMTs Hit Digi\t";
+	strings[5].insert(strings[5].end(), stringLength - strings[5].length(), '.');
+	strings[5] = strings[5] + ": " + OutString(pmthitdigiid);
+
+	strings[6] = "PMTs Hit Raw";
+	strings[6].insert(strings[6].end(), stringLength - strings[6].length(), '.');
+	strings[6] = strings[6] + ": " + OutString(pmthitrawid);
+
+	strings[7] = "Digi Hits";
+	strings[7].insert(strings[7].end(), stringLength - strings[7].length(), '.');
+	strings[7] = strings[7] + ": " + OutString(hitdigiid);
+
+	strings[8] = "Raw Hits";
+	strings[8].insert(strings[8].end(), stringLength - strings[8].length(), '.');
+	strings[8] = strings[8] + ": " + OutString(hitrawid);
+
+	strings[9] = "---------OD-------------";
+
+	strings[10] = "PMTs Hit Digi";
+	strings[10].insert(strings[10].end(), stringLength - strings[10].length(), '.');
+	strings[10] = strings[10] + ": " + OutString(pmthitdigiod);
+
+	strings[11] = "PMTs Hit Raw";
+	strings[11].insert(strings[11].end(), stringLength - strings[11].length(), '.');
+	strings[11] = strings[11] + ": " + OutString(pmthitrawod);
+
+	strings[12] = "Digi Hits";
+	strings[12].insert(strings[12].end(), stringLength - strings[12].length(), '.');
+	strings[12] = strings[12] + ": " + OutString(hitdigiod);
+
+	strings[13] = "Raw Hits";
+	strings[13].insert(strings[13].end(), stringLength - strings[13].length(), '.');
+	strings[13] = strings[13] + ": " + OutString(hitrawod);
+
+
+}
+void MyMainFrame::UpdateText(){
+	TextBox->Clear();
+
+ SetStrings();
 	for (int gh = 0; gh < 14; gh++){
 
-		text[gh]->ChangeText(strings[gh].c_str());
+		TextBox->AddLineFast(strings[gh].c_str());
 	}
+	TextBox->Update();
 }
 
 
 void MyMainFrame::IDOnly(){
-	frameLeft->ShowFrame(fEcanvasID);
-	frameLeft->HideFrame(fEcanvasOD);
+	TopFrame->ShowFrame(fEcanvasID);
+	TopFrame->HideFrame(fEcanvasOD);
+	fEcanvasID->MoveResize(TopFrameX, TopFrameY, TopFrameWidth, TopFrameHeight);
 
 }
 void MyMainFrame::ODOnly(){
-	frameLeft->ShowFrame(fEcanvasOD);
-	frameLeft->HideFrame(fEcanvasID);
+	TopFrame->ShowFrame(fEcanvasOD);
+	TopFrame->HideFrame(fEcanvasID);
+	fEcanvasOD->MoveResize(TopFrameX, TopFrameY, TopFrameWidth, TopFrameHeight);
 
 }
 void MyMainFrame::IDOD(){
-	frameLeft->ShowFrame(fEcanvasID);
-	frameLeft->ShowFrame(fEcanvasOD);
+	TopFrame->ShowFrame(fEcanvasID);
+	TopFrame->ShowFrame(fEcanvasOD);
+
+	fEcanvasID->Resize( (int)(TopFrameWidth/2), TopFrameHeight );
+	fEcanvasOD->MoveResize( (int)(TopFrameX + (TopFrameWidth/2) )  , TopFrameY ,(int)(TopFrameWidth/2), TopFrameHeight );
 
 }
 void MyMainFrame::Prev() {
-	if (ev <= 0 ) {std::cout << "This is the first event!" <<std::endl;}
+	if (ev <= 0 ) { TextBox->AddLine("This is the first event!"); }
 	else{
 		ev--;
 		Active();
@@ -753,11 +906,19 @@ void MyMainFrame::Prev() {
 	}
 }
 void MyMainFrame::Next() {
-	if (ev >= nEvent - 1 ) {std::cout << "This is the last event!" <<std::endl;}
+	if (ev >= nEvent - 1 ) {TextBox->AddLine("This is the last event!");}
 	else{
 		ev++;
 		Active();
 		UpdateText();
+	}
+}
+void MyMainFrame::SaveCanvas(){
+	if (idOn && (radioButton[0]->IsOn() || radioButton[2]->IsOn()) ) {
+		fEcanvasID->GetCanvas()->SaveAs("id.png");
+	}
+	if (odOn && (radioButton[1]->IsOn() || radioButton[2]->IsOn()) ) {
+		fEcanvasOD->GetCanvas()->SaveAs("od.png");
 	}
 }
 
@@ -769,5 +930,7 @@ MyMainFrame::~MyMainFrame() {
 void HKED(std::string file) {
 
    // Popup the GUI...
-   new MyMainFrame(file, gClient->GetRoot(), 800, 600);
+   //new MyMainFrame(file, gClient->GetRoot(), 800, 600);
+	 new MyMainFrame(file);
+
 }
