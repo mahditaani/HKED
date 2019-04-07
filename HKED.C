@@ -6,6 +6,7 @@
 // ROOT Includes
 #include "TH1F.h"
 #include "TH2F.h"
+#include "TH2Poly.h"
 #include "TFile.h"
 #include "TApplication.h"
 
@@ -20,6 +21,8 @@
 //#define MAXPMTA 18604
 #define WEIGHT 1
 #define FILLW 0.0001
+#define OFFSETID 25
+#define OFFSETOD  5
 
 
 #include <TGClient.h>
@@ -105,10 +108,10 @@ private:
 	 WCSimRootEvent *wcsimRootID;
 	 WCSimRootTrigger *wcsimTriggerOD;
 	 WCSimRootEvent *wcsimRootOD;
-	 TH2D *blankID;
-	 TH2D *blankOD;
-	 TH2D *displayID;
-	 TH2D *displayOD;
+	 TH2Poly *blankID;
+	 TH2Poly *blankOD;
+	 TH2Poly *displayID;
+	 TH2Poly *displayOD;
 	 TCanvas *canvasID;
 	 TCanvas *canvasOD;
 	 double RadiusID;
@@ -220,8 +223,8 @@ void MyMainFrame::Active(){
 	} // End of if statement
 
 	// Create copies of the blank event display
-	displayID = (TH2D*) blankID->Clone();
-	displayOD = (TH2D*) blankOD->Clone();
+	displayID = (TH2Poly*) blankID->Clone();
+	displayOD = (TH2Poly*) blankOD->Clone();
 
 	for (int nTrig = 0; nTrig < numTriggersID; nTrig++){
 
@@ -499,10 +502,10 @@ void MyMainFrame::Vision(){
 	HeightOD = 0;
 
 
-	displayID = new TH2D ("displayID", "displayID", nBinID, -dimX, dimX, nBinID, -dimZ, dimZ);
-	displayOD = new TH2D ("displayOD", "displayOD", nBinOD, -dimX, dimX, nBinOD, -dimZ, dimZ);
-	blankID = new TH2D ("blankID", "", nBinID, -dimX, dimX, nBinID, -dimZ, dimZ);
-	blankOD = new TH2D ("blankOD", "", nBinOD, -dimX, dimX, nBinOD, -dimZ, dimZ);
+	displayID = new TH2Poly ("displayID", "displayID", -dimX, dimX, -dimZ, dimZ);
+	displayOD = new TH2Poly ("displayOD", "displayOD", -dimX, dimX, -dimZ, dimZ);
+	blankID = new TH2Poly ("blankID", "", -dimX, dimX, -dimZ, dimZ);
+	blankOD = new TH2Poly ("blankOD", "", -dimX, dimX, -dimZ, dimZ);
 
 	// Remove Axis Lables
 	blankID->GetXaxis()->SetLabelOffset(999);
@@ -588,11 +591,13 @@ void MyMainFrame::Vision(){
 
 		//Top
 		if ( cylLoc == 5){
-			blankOD->Fill(tbe[0],tbe[1] + RadiusOD + HeightOD/2 ,FILLW);
+			blankOD->AddBin(tbe[0] - OFFSETOD, tbe[1] + RadiusOD + HeightOD/2 - OFFSETOD,
+			tbe[0] + OFFSETOD, tbe[1] + RadiusOD + HeightOD/2 + OFFSETOD);
 		}
 		//Bot
 		else if ( cylLoc == 3){
-			blankOD->Fill(tbe[0],-HeightOD/2 - RadiusOD -tbe[1],FILLW);
+			blankOD->AddBin(tbe[0] - OFFSETOD, -HeightOD/2 - RadiusOD -tbe[1] - OFFSETOD,
+				tbe[0] + OFFSETOD, -HeightOD/2 - RadiusOD -tbe[1] + OFFSETOD);
 		}
 		//Barrel
 		else {
@@ -600,7 +605,7 @@ void MyMainFrame::Vision(){
 			double angle = 2*asin(l/(2*RadiusOD));
 			double length = angle*RadiusOD ;
 			if (tbe[0]<0) length *= -1;
-			blankOD->Fill( length, tbe[2],FILLW);
+			blankOD->AddBin( length - OFFSETOD, tbe[2] - OFFSETOD, length - OFFSETID, tbe[2] - OFFSETID );
 		}
 
 	} // End of for loop filling OD PMT hits
@@ -615,11 +620,13 @@ void MyMainFrame::Vision(){
 
 		//Top
 		if ( cylLoc == 0){
-			blankID->Fill(tbe[0],tbe[1] + RadiusID + HeightID/2 ,FILLW);
+			blankID->AddBin(tbe[0] - OFFSETID, tbe[1] + RadiusID + HeightID/2 - OFFSETID,
+				tbe[0] + OFFSETID, tbe[1] + RadiusID + HeightID/2 + OFFSETID);
 		}
 		//Bot
 		else if ( cylLoc == 2){
-			blankID->Fill(tbe[0],-(HeightID/2 + RadiusID + tbe[1]),FILLW);
+			blankID->AddBin(tbe[0] - OFFSETID, -(HeightID/2 + RadiusID + tbe[1]) - OFFSETID,
+			tbe[0] + OFFSETID, -(HeightID/2 + RadiusID + tbe[1]) + OFFSETID);
 		}
 		//Barrel
 		else {
@@ -627,7 +634,7 @@ void MyMainFrame::Vision(){
 			double angle = 2*asin(l/(2*RadiusID));
 			double length = angle*RadiusID ;
 			if (tbe[0]<0) length *= -1;
-			blankID->Fill( length, tbe[2],FILLW);
+			blankID->AddBin( length- OFFSETID, tbe[2] - OFFSETID, length + OFFSETID, tbe[2] + OFFSETID);
 		}
 
 
