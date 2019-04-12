@@ -84,6 +84,8 @@ private:
 	 TGVerticalFrame *BottomLeftFrame;
 	 TGVerticalFrame *BottomRightFrame;
 	 TGVerticalFrame *ButtonsFrame;
+	 int sizeWidth;
+	 int sizeHeight;
 	 //TGGroupFrame *RadioGroup;
 	 TGButtonGroup *RadioGroup;
 	 TGRadioButton *radioButton[3];
@@ -403,21 +405,37 @@ void MyMainFrame::Active(){
 
 		displayID->Draw("COLZ");
 		//TLatex *textInfo = new TLatex(0.2,0.2, lineText.c_str());
-		for(int gh = 0; gh < 14; gh++){
-			float xtxt = 0.05;
-			float ytxt = 0.95 - gh*0.03;
+		for(int gh = 0; gh < 4; gh++){
+
+			float xtxt = 0.025;
+			float ytxt = 0.8 - gh*0.03;
 			std::string tmpString = "#color[2]{" + strings[gh] + "}";
-		TLatex *textInfo = new TLatex(xtxt,ytxt, tmpString.c_str());
-		textInfo->SetLineWidth(2);
-		textInfo->SetNDC(kTRUE);
-		textInfo->SetTextSize(0.02);
-		textInfo->Draw();
+			TLatex *textInfo = new TLatex(xtxt,ytxt, tmpString.c_str());
+			textInfo->SetLineWidth(2);
+			textInfo->SetNDC(kTRUE);
+			textInfo->SetTextSize(0.02);
+			textInfo->Draw();
+
 		}
+
+		for(int gh = 4; gh < 14; gh++){
+
+			float xtxt = 0.025;
+			float ytxt = 0.34 - (gh-4)*0.03;
+			std::string tmpString = "#color[5]{" + strings[gh] + "}";
+			TLatex *textInfo = new TLatex(xtxt,ytxt, tmpString.c_str());
+			textInfo->SetLineWidth(2);
+			textInfo->SetNDC(kTRUE);
+			textInfo->SetTextSize(0.02);
+			textInfo->Draw();
+
+		}
+
 
 		bigPad->Modified();
 		canvasID->cd();
 
-		TPad *smallPad = new TPad("small", "", 0.7,0.7,1, 1);
+		TPad *smallPad = new TPad("small", "", 0.68,0.65,1, 1);
 		smallPad->SetFillColor(kBlack);
 		smallPad->SetRightMargin(0.00);
 		smallPad->SetLeftMargin(0.);
@@ -687,7 +705,8 @@ void MyMainFrame::Vision(){
 
 
 MyMainFrame::MyMainFrame(string s) {
-
+	//DEBUGGING
+	std::cout << "debugA" <<std::endl;
 	 inFileName = s.c_str();
 
    // Create a main frame
@@ -702,7 +721,7 @@ MyMainFrame::MyMainFrame(string s) {
    TopFrame->SetLayoutBroken(kTRUE);
 
    fMain->AddFrame(TopFrame, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-   TopFrame->MoveResize(8,8,608,432);
+   TopFrame->MoveResize(0,0,1500,900);
 
 	 TopFrameX = TopFrame->GetX();
 	 TopFrameY = TopFrame->GetY();
@@ -712,8 +731,14 @@ MyMainFrame::MyMainFrame(string s) {
    // Create canvas widget to go in the top frame
    fEcanvasID = new TRootEmbeddedCanvas("EcanvasID",TopFrame,100,100);
 	 fEcanvasID->SetAutoFit();
+	 fEcanvasID->MoveResize(TopFrameX, TopFrameY, TopFrameWidth, TopFrameHeight);
    TopFrame->AddFrame(fEcanvasID, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 10,10,10,1));
 
+	 fEcanvasID->MoveResize(TopFrameX, TopFrameY, TopFrameWidth, TopFrameHeight);
+
+	 //DEBUGGING
+	 std::cout << "debugB" <<std::endl;
+/*
 	 // Bottom Left frame
    BottomLeftFrame = new TGVerticalFrame(fMain,384,336,kVerticalFrame);
    BottomLeftFrame->SetName("BottomLeftFrame");
@@ -753,54 +778,60 @@ MyMainFrame::MyMainFrame(string s) {
    RadioGroup->Resize(176,184);
    BottomRightFrame->AddFrame(RadioGroup, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
    RadioGroup->MoveResize(24,0,176,184);
-
-   ButtonNext = new TGTextButton(BottomRightFrame,"Next",-1,TGTextButton::GetDefaultGC()(),TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
+*/
+   ButtonNext = new TGTextButton(fMain, "Next",-1,TGTextButton::GetDefaultGC()(),TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
 	 ButtonNext->SetToolTipText("Displays the next event");
    ButtonNext->SetTextJustify(36);
    ButtonNext->SetMargins(0,0,0,0);
    ButtonNext->SetWrapLength(-1);
-   ButtonNext->Resize(105,24);
-   BottomRightFrame->AddFrame(ButtonNext, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-   ButtonNext->MoveResize(48,200,105,24);
+   //ButtonNext->Resize(105,24);
+   fMain->AddFrame(ButtonNext, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+   ButtonNext->MoveResize(32,920,92,24);
 
-   ButtonPrev = new TGTextButton(BottomRightFrame,"Previous",-1,TGTextButton::GetDefaultGC()(),TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
+   ButtonPrev = new TGTextButton(fMain,"Previous",-1,TGTextButton::GetDefaultGC()(),TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
 	 ButtonPrev->SetToolTipText("Displays the previous event");
    ButtonPrev->SetTextJustify(36);
    ButtonPrev->SetMargins(0,0,0,0);
    ButtonPrev->SetWrapLength(-1);
-   ButtonPrev->Resize(105,24);
-   BottomRightFrame->AddFrame(ButtonPrev, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-   ButtonPrev->MoveResize(48,232,105,24);
+   //ButtonPrev->Resize(105,24);
+   fMain->AddFrame(ButtonPrev, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+   ButtonPrev->MoveResize(144,920,92,24);
 
-   ButtonSave = new TGTextButton(BottomRightFrame,"Save",-1,TGTextButton::GetDefaultGC()(),TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
+   ButtonSave = new TGTextButton(fMain,"Save",-1,TGTextButton::GetDefaultGC()(),TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
 	 ButtonSave->SetToolTipText("Saves the displays, as you see them, to png files");
    ButtonSave->SetTextJustify(36);
    ButtonSave->SetMargins(0,0,0,0);
    ButtonSave->SetWrapLength(-1);
-   ButtonSave->Resize(105,24);
-   BottomRightFrame->AddFrame(ButtonSave, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-   ButtonSave->MoveResize(48,264,105,24);
+   //ButtonSave->Resize(105,24);
+   fMain->AddFrame(ButtonSave, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+   ButtonSave->MoveResize(256,920,92,24);
+	 //DEBUGGING
+ 	std::cout << "debugC" <<std::endl;
 
-
-	 ButtonExit = new TGTextButton(BottomRightFrame,"Exit","gApplication->Terminate(0)",-1,TGTextButton::GetDefaultGC()(),TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
+	 ButtonExit = new TGTextButton(fMain,"Exit","gApplication->Terminate(0)",-1,TGTextButton::GetDefaultGC()(),TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
    ButtonExit->SetTextJustify(36);
    ButtonExit->SetMargins(0,0,0,0);
    ButtonExit->SetWrapLength(-1);
-   ButtonExit->Resize(105,24);
-   BottomRightFrame->AddFrame(ButtonExit, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-   ButtonExit->MoveResize(48,296,105,24);
-
+   //ButtonExit->Resize(105,24);
+   fMain->AddFrame(ButtonExit, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+   ButtonExit->MoveResize(360,920,92,24);
+/*
 	 fMain->AddFrame(BottomRightFrame, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
    BottomRightFrame->MoveResize(400,448,216,336);
+*/
 
+//DEBUGGING
+std::cout << "debugD" <<std::endl;
    fMain->SetMWMHints(kMWMDecorAll,
                         kMWMFuncAll,
                         kMWMInputModeless);
    fMain->MapSubwindows();
-
+	 //DEBUGGING
+ 	std::cout << "debugE" <<std::endl;
    fMain->Resize(fMain->GetDefaultSize());
    fMain->MapWindow();
-   fMain->Resize(620,792);
+   fMain->Resize(1500,950);
+
 
 
 	 // Button Commands
@@ -808,23 +839,26 @@ MyMainFrame::MyMainFrame(string s) {
    ButtonNext->Connect("Clicked()","MyMainFrame",this,"Next()");
 	 ButtonSave->Connect("Clicked()","MyMainFrame",this,"SaveCanvas()");
 
-
+/*
 	 radioButton[0]->Connect("Clicked()","MyMainFrame",this,"IDOnly()");
 	 radioButton[1]->Connect("Clicked()","MyMainFrame",this,"ODOnly()");
 	 radioButton[2]->Connect("Clicked()","MyMainFrame",this,"IDOD()");
 
+*/
 
-
+//DEBUGGING
+std::cout << "debugF" <<std::endl;
 	 SetStrings(); // Format the text to be seen in the bottom left
 
 
 	 for (int gh = 0; gh < 14; gh++){ // Add the text to the text box
 
-		 TextBox->AddLineFast(strings[gh].c_str());
+	//	 TextBox->AddLineFast(strings[gh].c_str());
 
 	 }
-
-	 TextBox->Update(); // Update the text in the box
+	 //DEBUGGING
+ 	std::cout << "debugG" <<std::endl;
+	// TextBox->Update(); // Update the text in the box
 
    // Set a name to the main frame
    fMain->SetWindowName("HK Event Display");
@@ -841,15 +875,22 @@ MyMainFrame::MyMainFrame(string s) {
 
 	 // Initialize other variables and plots
 	 Vision();
+	 //DEBUGGING
+		std::cout << "debugH" <<std::endl;
 	 Active();
+	 //DEBUGGING
+		std::cout << "debugI" <<std::endl;
 	 UpdateText();
+	 //DEBUGGING
+		std::cout << "debugJ" <<std::endl;
 	 Active();
-
+/*
 	 // Set default states and disable options if part of the detector was not built.
 	 if (!odOn && idOn){IDOnly(); radioButton[2]->SetEnabled(kFALSE);radioButton[1]->SetEnabled(kFALSE);radioButton[0]->SetState(kButtonDown);}
 	 if (odOn && !idOn){ODOnly(); radioButton[2]->SetEnabled(kFALSE);radioButton[0]->SetEnabled(kFALSE);radioButton[1]->SetState(kButtonDown);}
 	 if(!odOn && !idOn){gApplication->Terminate(0);}
 	 if(odOn && idOn){IDOD(); radioButton[0]->SetState(kButtonDown);}
+*/
 
 }
 
@@ -911,7 +952,7 @@ void MyMainFrame::SetStrings(){
 
 }
 void MyMainFrame::UpdateText(){
-	TextBox->Clear();
+	//TextBox->Clear();
 
  SetStrings();
 	lineText.clear();
@@ -920,11 +961,11 @@ void MyMainFrame::UpdateText(){
 	for (int gh = 0; gh < 14; gh++){
 		lineText += strings[gh];
 		lineText += "#splitline ";
-		TextBox->AddLineFast(strings[gh].c_str());
+		//TextBox->AddLineFast(strings[gh].c_str());
 	}
 	lineText += "}";
 
-	TextBox->Update();
+	//TextBox->Update();
 
 }
 
@@ -941,7 +982,9 @@ void MyMainFrame::IDOD(){
 	fEcanvasID->Resize( (int)(TopFrameWidth/2), TopFrameHeight );
 }
 void MyMainFrame::Prev() {
-	if (ev <= 0 ) { TextBox->AddLine("This is the first event!"); }
+	if (ev <= 0 ) {
+		//TextBox->AddLine("This is the first event!");
+	}
 	else{
 		ev--;
 		Active();
@@ -949,7 +992,9 @@ void MyMainFrame::Prev() {
 	}
 }
 void MyMainFrame::Next() {
-	if (ev >= nEvent - 1 ) {TextBox->AddLine("This is the last event!");}
+	if (ev >= nEvent - 1 ) {
+		//TextBox->AddLine("This is the last event!");
+	}
 	else{
 		ev++;
 		Active();
@@ -957,7 +1002,7 @@ void MyMainFrame::Next() {
 	}
 }
 void MyMainFrame::SaveCanvas(){
-	if (idOn && (radioButton[0]->IsOn() || radioButton[2]->IsOn()) ) {
+	if (idOn ) {
 		fEcanvasID->GetCanvas()->SaveAs("id.png");
 	}
 }
