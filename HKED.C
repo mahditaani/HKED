@@ -81,16 +81,10 @@ private:
    TGMainFrame         *fMain;
    TRootEmbeddedCanvas *fEcanvasID;
 	 TGHorizontalFrame *TopFrame;
-	 TGVerticalFrame *BottomLeftFrame;
-	 TGVerticalFrame *BottomRightFrame;
-	 TGVerticalFrame *ButtonsFrame;
-	 int sizeWidth;
-	 int sizeHeight;
-	 //TGGroupFrame *RadioGroup;
-	 TGButtonGroup *RadioGroup;
-	 TGRadioButton *radioButton[3];
+
 	 TGTextButton *ButtonNext;
 	 TGTextButton *ButtonPrev;
+	 TGTextButton *ButtonSwitch;
 	 TGTextButton *ButtonSave;
 	 TGTextButton *ButtonExit;
 	 TGTextEdit *TextBox;
@@ -123,6 +117,7 @@ private:
 	 double HeightOD;
 	 bool idOn;
 	 bool odOn;
+	 bool bigID = true;
 	 const int txtW = 20;
 	 const int numW = 10;
 	 int verbosity = 0;
@@ -153,11 +148,9 @@ public:
    virtual ~MyMainFrame();
    void Prev();
 	 void Next();
+	 void Switch();
 	 void Vision();
 	 void Active();
-	 void IDOnly();
-	 void ODOnly();
-	 void IDOD();
 	 void SaveCanvas();
 	 void SetStrings();
 	 void UpdateText();
@@ -386,9 +379,6 @@ void MyMainFrame::Active(){
 	} // End of loop over triggers
 
 
-	if (odOn){
-
-	 }
 	if (idOn){
 
 		canvasID->cd();
@@ -403,8 +393,12 @@ void MyMainFrame::Active(){
 		bigPad->Draw();
 		bigPad->cd();
 
-		displayID->Draw("COLZ");
-		//TLatex *textInfo = new TLatex(0.2,0.2, lineText.c_str());
+		if( !bigID && odOn){
+			displayOD->Draw("COLZ");
+		} else if( bigID && idOn){
+			displayID->Draw("COLZ");
+		}
+
 		for(int gh = 0; gh < 4; gh++){
 
 			float xtxt = 0.025;
@@ -444,7 +438,11 @@ void MyMainFrame::Active(){
 
 		smallPad->Draw();
 		smallPad->cd();
-		displayOD->Draw("COLZ");
+		if( bigID && odOn){
+			displayOD->Draw("COLZ");
+		} else if( !bigID && idOn){
+			displayID->Draw("COLZ");
+		}
 
 		smallPad->Modified();
 		canvasID->cd();
@@ -705,8 +703,6 @@ void MyMainFrame::Vision(){
 
 
 MyMainFrame::MyMainFrame(string s) {
-	//DEBUGGING
-	std::cout << "debugA" <<std::endl;
 	 inFileName = s.c_str();
 
    // Create a main frame
@@ -736,98 +732,51 @@ MyMainFrame::MyMainFrame(string s) {
 
 	 fEcanvasID->MoveResize(TopFrameX, TopFrameY, TopFrameWidth, TopFrameHeight);
 
-	 //DEBUGGING
-	 std::cout << "debugB" <<std::endl;
-/*
-	 // Bottom Left frame
-   BottomLeftFrame = new TGVerticalFrame(fMain,384,336,kVerticalFrame);
-   BottomLeftFrame->SetName("BottomLeftFrame");
-   BottomLeftFrame->SetLayoutBroken(kTRUE);
-
-	 // Text box to display event details
-   TextBox = new TGTextEdit(BottomLeftFrame,368,320);
-   TextBox->SetName("TextBox");
-   BottomLeftFrame->AddFrame(TextBox, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-   TextBox->MoveResize(8,8,368,320);
-	 TextBox->SetReadOnly();
-
-   fMain->AddFrame(BottomLeftFrame, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-   BottomLeftFrame->MoveResize(8,448,384,336);
-
-	 // Bottom Right Frame
-   BottomRightFrame = new TGVerticalFrame(fMain,216,336,kVerticalFrame);
-   BottomRightFrame->SetName("BottomRightFrame");
-   BottomRightFrame->SetLayoutBroken(kTRUE);
-
-	 // Buttons on bottom right frame
-	 RadioGroup = new TGButtonGroup(BottomRightFrame,"Show Detector");
-
-
-	 radioButton[0] = new TGRadioButton(RadioGroup, "ID");
-	 radioButton[0]->SetToolTipText("Displays the ID only");
-	 RadioGroup->AddFrame(radioButton[0], new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-
-	 radioButton[1] = new TGRadioButton(RadioGroup, new TGHotString("&OD"));
-	 radioButton[1]->SetToolTipText("Displays the OD only");
-	 RadioGroup->AddFrame(radioButton[1], new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-
-	 radioButton[2] = new TGRadioButton(RadioGroup, new TGHotString("&ID and OD"));
-	 radioButton[2]->SetToolTipText("Displays the ID and OD");
-   RadioGroup->AddFrame(radioButton[2], new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-
-   RadioGroup->Resize(176,184);
-   BottomRightFrame->AddFrame(RadioGroup, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-   RadioGroup->MoveResize(24,0,176,184);
-*/
    ButtonNext = new TGTextButton(fMain, "Next",-1,TGTextButton::GetDefaultGC()(),TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
 	 ButtonNext->SetToolTipText("Displays the next event");
    ButtonNext->SetTextJustify(36);
    ButtonNext->SetMargins(0,0,0,0);
    ButtonNext->SetWrapLength(-1);
-   //ButtonNext->Resize(105,24);
    fMain->AddFrame(ButtonNext, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-   ButtonNext->MoveResize(32,920,92,24);
+   ButtonNext->MoveResize(144,920,92,24);
 
    ButtonPrev = new TGTextButton(fMain,"Previous",-1,TGTextButton::GetDefaultGC()(),TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
 	 ButtonPrev->SetToolTipText("Displays the previous event");
    ButtonPrev->SetTextJustify(36);
    ButtonPrev->SetMargins(0,0,0,0);
    ButtonPrev->SetWrapLength(-1);
-   //ButtonPrev->Resize(105,24);
    fMain->AddFrame(ButtonPrev, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-   ButtonPrev->MoveResize(144,920,92,24);
+   ButtonPrev->MoveResize(32,920,92,24);
+
+	 ButtonSwitch = new TGTextButton(fMain,"Switch",-1,TGTextButton::GetDefaultGC()(),TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
+	 ButtonSwitch->SetToolTipText("Switches the order of the ID and OD.");
+   ButtonSwitch->SetTextJustify(36);
+   ButtonSwitch->SetMargins(0,0,0,0);
+   ButtonSwitch->SetWrapLength(-1);
+   fMain->AddFrame(ButtonSwitch, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+   ButtonSwitch->MoveResize(256,920,92,24);
 
    ButtonSave = new TGTextButton(fMain,"Save",-1,TGTextButton::GetDefaultGC()(),TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
 	 ButtonSave->SetToolTipText("Saves the displays, as you see them, to png files");
    ButtonSave->SetTextJustify(36);
    ButtonSave->SetMargins(0,0,0,0);
    ButtonSave->SetWrapLength(-1);
-   //ButtonSave->Resize(105,24);
    fMain->AddFrame(ButtonSave, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-   ButtonSave->MoveResize(256,920,92,24);
-	 //DEBUGGING
- 	std::cout << "debugC" <<std::endl;
+   ButtonSave->MoveResize(368,920,92,24);
 
 	 ButtonExit = new TGTextButton(fMain,"Exit","gApplication->Terminate(0)",-1,TGTextButton::GetDefaultGC()(),TGTextButton::GetDefaultFontStruct(),kRaisedFrame);
    ButtonExit->SetTextJustify(36);
    ButtonExit->SetMargins(0,0,0,0);
    ButtonExit->SetWrapLength(-1);
-   //ButtonExit->Resize(105,24);
-   fMain->AddFrame(ButtonExit, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-   ButtonExit->MoveResize(360,920,92,24);
-/*
-	 fMain->AddFrame(BottomRightFrame, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
-   BottomRightFrame->MoveResize(400,448,216,336);
-*/
 
-//DEBUGGING
-std::cout << "debugD" <<std::endl;
+   fMain->AddFrame(ButtonExit, new TGLayoutHints(kLHintsLeft | kLHintsTop,2,2,2,2));
+   ButtonExit->MoveResize(480,920,92,24);
+
    fMain->SetMWMHints(kMWMDecorAll,
                         kMWMFuncAll,
                         kMWMInputModeless);
    fMain->MapSubwindows();
-	 //DEBUGGING
- 	std::cout << "debugE" <<std::endl;
+
    fMain->Resize(fMain->GetDefaultSize());
    fMain->MapWindow();
    fMain->Resize(1500,950);
@@ -837,28 +786,10 @@ std::cout << "debugD" <<std::endl;
 	 // Button Commands
    ButtonPrev->Connect("Clicked()","MyMainFrame",this,"Prev()");
    ButtonNext->Connect("Clicked()","MyMainFrame",this,"Next()");
+	 ButtonSwitch->Connect("Clicked()","MyMainFrame",this,"Switch()");
 	 ButtonSave->Connect("Clicked()","MyMainFrame",this,"SaveCanvas()");
 
-/*
-	 radioButton[0]->Connect("Clicked()","MyMainFrame",this,"IDOnly()");
-	 radioButton[1]->Connect("Clicked()","MyMainFrame",this,"ODOnly()");
-	 radioButton[2]->Connect("Clicked()","MyMainFrame",this,"IDOD()");
-
-*/
-
-//DEBUGGING
-std::cout << "debugF" <<std::endl;
 	 SetStrings(); // Format the text to be seen in the bottom left
-
-
-	 for (int gh = 0; gh < 14; gh++){ // Add the text to the text box
-
-	//	 TextBox->AddLineFast(strings[gh].c_str());
-
-	 }
-	 //DEBUGGING
- 	std::cout << "debugG" <<std::endl;
-	// TextBox->Update(); // Update the text in the box
 
    // Set a name to the main frame
    fMain->SetWindowName("HK Event Display");
@@ -875,22 +806,9 @@ std::cout << "debugF" <<std::endl;
 
 	 // Initialize other variables and plots
 	 Vision();
-	 //DEBUGGING
-		std::cout << "debugH" <<std::endl;
 	 Active();
-	 //DEBUGGING
-		std::cout << "debugI" <<std::endl;
 	 UpdateText();
-	 //DEBUGGING
-		std::cout << "debugJ" <<std::endl;
 	 Active();
-/*
-	 // Set default states and disable options if part of the detector was not built.
-	 if (!odOn && idOn){IDOnly(); radioButton[2]->SetEnabled(kFALSE);radioButton[1]->SetEnabled(kFALSE);radioButton[0]->SetState(kButtonDown);}
-	 if (odOn && !idOn){ODOnly(); radioButton[2]->SetEnabled(kFALSE);radioButton[0]->SetEnabled(kFALSE);radioButton[1]->SetState(kButtonDown);}
-	 if(!odOn && !idOn){gApplication->Terminate(0);}
-	 if(odOn && idOn){IDOD(); radioButton[0]->SetState(kButtonDown);}
-*/
 
 }
 
@@ -899,7 +817,7 @@ void MyMainFrame::SetStrings(){
 
 	strings[0] = "Event";
 	strings[0].insert(strings[0].end(), stringLength - strings[0].length(), '.');
-	strings[0] = strings[0] + ": " + OutString(ev);
+	strings[0] = strings[0] + ": " + OutString(ev+1) + "/" + OutString(nEvent);
 
 	strings[1] = "Energy";
 	strings[1].insert(strings[1].end(), stringLength - strings[1].length(), '.');
@@ -952,57 +870,80 @@ void MyMainFrame::SetStrings(){
 
 }
 void MyMainFrame::UpdateText(){
-	//TextBox->Clear();
 
- SetStrings();
-	lineText.clear();
-	lineText += "#color[2]{";
+	wcsimTriggerID = wcsimRootID->GetTrigger(0);
+	WCSimRootTrack * trackID = (WCSimRootTrack*) wcsimTriggerID->GetTracks()->At(0);
+	vtxx = wcsimTriggerID->GetVtx(0);
+	vtxy = wcsimTriggerID->GetVtx(1);
+	vtxz = wcsimTriggerID->GetVtx(2);
+ 	dirx = trackID->GetDir(0);
+ 	diry = trackID->GetDir(1);
+ 	dirz = trackID->GetDir(2);
+ 	ene = trackID->GetE();
+ 	pmthitrawid = wcsimTriggerID->GetNcherenkovhits();
+ 	pmthitdigiid = wcsimTriggerID->GetNcherenkovdigihits();
 
-	for (int gh = 0; gh < 14; gh++){
-		lineText += strings[gh];
-		lineText += "#splitline ";
-		//TextBox->AddLineFast(strings[gh].c_str());
+ 	wcsimTriggerOD = wcsimRootOD->GetTrigger(0);
+ 	pmthitrawod = wcsimTriggerOD->GetNcherenkovhits();
+ 	pmthitdigiod = wcsimTriggerOD->GetNcherenkovdigihits();
+	int hitnum = 0;
+
+	hitnum = wcsimTriggerOD->GetCherenkovDigiHits()->GetEntries();
+	hitdigiod = 0;
+	for (int jh = 0; jh < hitnum; jh++){
+		WCSimRootCherenkovDigiHit *cherenkovDigiHitOD = (WCSimRootCherenkovDigiHit*) wcsimTriggerOD->GetCherenkovDigiHits()->At(jh);
+		hitdigiod += cherenkovDigiHitOD->GetQ();
 	}
-	lineText += "}";
 
-	//TextBox->Update();
+	hitnum = wcsimTriggerOD->GetCherenkovHits()->GetEntries();
+	hitrawod = 0;
+	for (int jh = 0; jh < hitnum; jh++){
+		WCSimRootCherenkovHit *cherenkovHitOD = (WCSimRootCherenkovHit*) wcsimTriggerOD->GetCherenkovHits()->At(jh);
+		hitrawod += cherenkovHitOD->GetTotalPe(1);
+	}
 
+	hitnum = wcsimTriggerID->GetCherenkovDigiHits()->GetEntries();
+	hitdigiid = 0;
+	for (int jh = 0; jh < hitnum; jh++){
+		WCSimRootCherenkovDigiHit *cherenkovDigiHitID = (WCSimRootCherenkovDigiHit*) wcsimTriggerID->GetCherenkovDigiHits()->At(jh);
+		hitdigiid += cherenkovDigiHitID->GetQ();
+	}
+
+	hitnum = wcsimTriggerID->GetCherenkovHits()->GetEntries();
+	hitrawid = 0;
+	for (int jh = 0; jh < hitnum; jh++){
+		WCSimRootCherenkovHit *cherenkovHitID = (WCSimRootCherenkovHit*) wcsimTriggerID->GetCherenkovHits()->At(jh);
+		hitrawid += cherenkovHitID->GetTotalPe(1);
+	}
+
+ 	SetStrings();
 }
 
 
-void MyMainFrame::IDOnly(){
-	TopFrame->ShowFrame(fEcanvasID);
-	fEcanvasID->MoveResize(TopFrameX, TopFrameY, TopFrameWidth, TopFrameHeight);
-}
-void MyMainFrame::ODOnly(){
-	TopFrame->HideFrame(fEcanvasID);
-}
-void MyMainFrame::IDOD(){
-	TopFrame->ShowFrame(fEcanvasID);
-	fEcanvasID->Resize( (int)(TopFrameWidth/2), TopFrameHeight );
-}
 void MyMainFrame::Prev() {
-	if (ev <= 0 ) {
-		//TextBox->AddLine("This is the first event!");
-	}
-	else{
+	if (ev > 0){
 		ev--;
-		Active();
 		UpdateText();
+		Active();
 	}
 }
 void MyMainFrame::Next() {
-	if (ev >= nEvent - 1 ) {
-		//TextBox->AddLine("This is the last event!");
-	}
-	else{
+	if (ev < nEvent - 1 ){
 		ev++;
-		Active();
 		UpdateText();
+		Active();
+
+
 	}
 }
+void MyMainFrame::Switch() {
+		bigID = !bigID;
+		UpdateText();
+		Active();
+
+}
 void MyMainFrame::SaveCanvas(){
-	if (idOn ) {
+	if (idOn) {
 		fEcanvasID->GetCanvas()->SaveAs("id.png");
 	}
 }
