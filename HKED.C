@@ -79,7 +79,6 @@ class MyMainFrame {
 private:
    TGMainFrame         *fMain;
    TRootEmbeddedCanvas *fEcanvasID;
-	 TRootEmbeddedCanvas *fEcanvasOD;
 	 TGHorizontalFrame *TopFrame;
 	 TGVerticalFrame *BottomLeftFrame;
 	 TGVerticalFrame *BottomRightFrame;
@@ -384,12 +383,45 @@ void MyMainFrame::Active(){
 
 
 	if (odOn){
-		TLegend *legOD = new TLegend(0.7,0.7,1,1);legOD->SetHeader("OD","C");
-		canvasOD->cd(); displayOD->Draw("COLZ"); legOD->Draw("same"); canvasOD->Update();
+
 	 }
 	if (idOn){
-		TLegend *legID = new TLegend(0.7,0.7,1,1);legID->SetHeader("ID","C");
-		canvasID->cd(); displayID->Draw("COLZ"); legID->Draw("same"); canvasID->Update();
+
+		canvasID->cd();
+
+		TPad *bigPad = new TPad("big", "", 0,0,1, 1);
+		bigPad->SetFillColor(kBlack);
+		bigPad->SetRightMargin(0.00);
+		bigPad->SetLeftMargin(0.);
+		bigPad->SetTopMargin(0.00);
+		bigPad->SetBottomMargin(0.);
+
+		bigPad->Draw();
+		bigPad->cd();
+		displayID->Draw("COLZ");
+
+		bigPad->Modified();
+		canvasID->cd();
+
+		TPad *smallPad = new TPad("small", "", 0.7,0.7,1, 1);
+		smallPad->SetFillColor(kBlack);
+		smallPad->SetRightMargin(0.00);
+		smallPad->SetLeftMargin(0.);
+		smallPad->SetTopMargin(0.00);
+		smallPad->SetBottomMargin(0.);
+
+		smallPad->Draw();
+		smallPad->cd();
+		displayOD->Draw("COLZ");
+
+		smallPad->Modified();
+		canvasID->cd();
+
+		canvasID->Modified();
+		canvasID->cd();
+		canvasID->SetSelected(canvasID);
+		canvasID->Update();
+
 	}
 
 
@@ -416,6 +448,7 @@ void MyMainFrame::Active(){
 void MyMainFrame::Vision(){
 
 	gStyle->SetOptStat(0); // Remove stats from our histograms
+	gStyle->SetPalette(1); // Use the rainbow colour palette
 	// Some nicely formatted text options
 	std::cout << std::scientific; // This causes all numbers to be displayed in scientific notation.
 	std::cout << std::setprecision(2); // Sets the decimal precision (no more than two decimal places)
@@ -468,17 +501,11 @@ void MyMainFrame::Vision(){
 
 
 	canvasID = fEcanvasID->GetCanvas();
-	canvasOD = fEcanvasOD->GetCanvas();
 
 	canvasID->SetRightMargin(0.00);
 	canvasID->SetLeftMargin(0.);
 	canvasID->SetTopMargin(0.00);
 	canvasID->SetBottomMargin(0.);
-	canvasOD->SetRightMargin(0.);
-	canvasOD->SetLeftMargin(0.);
-	canvasOD->SetTopMargin(0.);
-	canvasOD->SetBottomMargin(0.);
-
 
 	// Plot parameters
 	int nBinID = 100; // Granularity for ID plot
@@ -605,7 +632,7 @@ void MyMainFrame::Vision(){
 			double angle = 2*asin(l/(2*RadiusOD));
 			double length = angle*RadiusOD ;
 			if (tbe[0]<0) length *= -1;
-			blankOD->AddBin( length - OFFSETOD, tbe[2] - OFFSETOD, length - OFFSETID, tbe[2] - OFFSETID );
+			blankOD->AddBin( length - OFFSETOD, tbe[2] - OFFSETOD, length + OFFSETID, tbe[2] + OFFSETID );
 		}
 
 	} // End of for loop filling OD PMT hits
@@ -672,10 +699,6 @@ MyMainFrame::MyMainFrame(string s) {
    fEcanvasID = new TRootEmbeddedCanvas("EcanvasID",TopFrame,100,100);
 	 fEcanvasID->SetAutoFit();
    TopFrame->AddFrame(fEcanvasID, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 10,10,10,1));
-
-	 fEcanvasOD = new TRootEmbeddedCanvas("EcanvasOD",TopFrame,100,100);
-	 TopFrame->AddFrame(fEcanvasOD, new TGLayoutHints(kLHintsExpandX | kLHintsExpandY, 10,10,10,1));
-	 fEcanvasOD->SetAutoFit();
 
 	 // Bottom Left frame
    BottomLeftFrame = new TGVerticalFrame(fMain,384,336,kVerticalFrame);
@@ -811,7 +834,7 @@ MyMainFrame::MyMainFrame(string s) {
 	 if (!odOn && idOn){IDOnly(); radioButton[2]->SetEnabled(kFALSE);radioButton[1]->SetEnabled(kFALSE);radioButton[0]->SetState(kButtonDown);}
 	 if (odOn && !idOn){ODOnly(); radioButton[2]->SetEnabled(kFALSE);radioButton[0]->SetEnabled(kFALSE);radioButton[1]->SetState(kButtonDown);}
 	 if(!odOn && !idOn){gApplication->Terminate(0);}
-	 if(odOn && idOn){IDOD(); radioButton[2]->SetState(kButtonDown);}
+	 if(odOn && idOn){IDOD(); radioButton[0]->SetState(kButtonDown);}
 
 }
 
@@ -886,23 +909,14 @@ void MyMainFrame::UpdateText(){
 
 void MyMainFrame::IDOnly(){
 	TopFrame->ShowFrame(fEcanvasID);
-	TopFrame->HideFrame(fEcanvasOD);
 	fEcanvasID->MoveResize(TopFrameX, TopFrameY, TopFrameWidth, TopFrameHeight);
-
 }
 void MyMainFrame::ODOnly(){
-	TopFrame->ShowFrame(fEcanvasOD);
 	TopFrame->HideFrame(fEcanvasID);
-	fEcanvasOD->MoveResize(TopFrameX, TopFrameY, TopFrameWidth, TopFrameHeight);
-
 }
 void MyMainFrame::IDOD(){
 	TopFrame->ShowFrame(fEcanvasID);
-	TopFrame->ShowFrame(fEcanvasOD);
-
 	fEcanvasID->Resize( (int)(TopFrameWidth/2), TopFrameHeight );
-	fEcanvasOD->MoveResize( (int)(TopFrameX + (TopFrameWidth/2) )  , TopFrameY ,(int)(TopFrameWidth/2), TopFrameHeight );
-
 }
 void MyMainFrame::Prev() {
 	if (ev <= 0 ) { TextBox->AddLine("This is the first event!"); }
@@ -923,9 +937,6 @@ void MyMainFrame::Next() {
 void MyMainFrame::SaveCanvas(){
 	if (idOn && (radioButton[0]->IsOn() || radioButton[2]->IsOn()) ) {
 		fEcanvasID->GetCanvas()->SaveAs("id.png");
-	}
-	if (odOn && (radioButton[1]->IsOn() || radioButton[2]->IsOn()) ) {
-		fEcanvasOD->GetCanvas()->SaveAs("od.png");
 	}
 }
 
