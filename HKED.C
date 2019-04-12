@@ -23,7 +23,7 @@
 #define WEIGHT 1
 #define FILLW 0.0001
 #define OFFSETID 25
-#define OFFSETOD  5
+#define OFFSETOD  25
 
 
 #include <TGClient.h>
@@ -473,8 +473,6 @@ void MyMainFrame::Active(){
 
 }
 
-
-
 void MyMainFrame::Vision(){
 
 	gStyle->SetOptStat(0); // Remove stats from our histograms
@@ -699,8 +697,6 @@ void MyMainFrame::Vision(){
 
 
 }
-
-
 
 MyMainFrame::MyMainFrame(string s) {
 	 inFileName = s.c_str();
