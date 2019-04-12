@@ -379,7 +379,7 @@ void MyMainFrame::Active(){
 	} // End of loop over triggers
 
 
-	if (idOn){
+	if (idOn || odOn){
 
 		canvasID->cd();
 
