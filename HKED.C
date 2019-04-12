@@ -9,6 +9,7 @@
 #include "TH2Poly.h"
 #include "TFile.h"
 #include "TApplication.h"
+#include "TLatex.h"
 
 
 // WCSim Includes
@@ -113,6 +114,7 @@ private:
 	 TH2Poly *displayOD;
 	 TCanvas *canvasID;
 	 TCanvas *canvasOD;
+	 std::string lineText;
 	 double RadiusID;
 	 double HeightID;
 	 double RadiusOD;
@@ -398,7 +400,19 @@ void MyMainFrame::Active(){
 
 		bigPad->Draw();
 		bigPad->cd();
+
 		displayID->Draw("COLZ");
+		//TLatex *textInfo = new TLatex(0.2,0.2, lineText.c_str());
+		for(int gh = 0; gh < 14; gh++){
+			float xtxt = 0.05;
+			float ytxt = 0.95 - gh*0.03;
+			std::string tmpString = "#color[2]{" + strings[gh] + "}";
+		TLatex *textInfo = new TLatex(xtxt,ytxt, tmpString.c_str());
+		textInfo->SetLineWidth(2);
+		textInfo->SetNDC(kTRUE);
+		textInfo->SetTextSize(0.02);
+		textInfo->Draw();
+		}
 
 		bigPad->Modified();
 		canvasID->cd();
@@ -829,6 +843,7 @@ MyMainFrame::MyMainFrame(string s) {
 	 Vision();
 	 Active();
 	 UpdateText();
+	 Active();
 
 	 // Set default states and disable options if part of the detector was not built.
 	 if (!odOn && idOn){IDOnly(); radioButton[2]->SetEnabled(kFALSE);radioButton[1]->SetEnabled(kFALSE);radioButton[0]->SetState(kButtonDown);}
@@ -899,11 +914,18 @@ void MyMainFrame::UpdateText(){
 	TextBox->Clear();
 
  SetStrings();
-	for (int gh = 0; gh < 14; gh++){
+	lineText.clear();
+	lineText += "#color[2]{";
 
+	for (int gh = 0; gh < 14; gh++){
+		lineText += strings[gh];
+		lineText += "#splitline ";
 		TextBox->AddLineFast(strings[gh].c_str());
 	}
+	lineText += "}";
+
 	TextBox->Update();
+
 }
 
 
