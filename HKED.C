@@ -16,10 +16,8 @@
 
 // Defines
 #define PI 3.141592654
-//#define MAXPMT 38448
-//#define MAXPMTA 18604
 #define WEIGHT 1
-#define FILLW 0.0001
+#define FILLW 0.0001 // used to just fill up the bins to get the basic cylinder shape.
 
 
 #include <TGClient.h>
@@ -31,7 +29,6 @@
 #include <TRootEmbeddedCanvas.h>
 #include <RQ_OBJECT.h>
 
-//class TGRadioButton;
 
 // Ensure that you have set the WCSIMDIR environment variable so llib can load the libraries required
 /*
@@ -68,6 +65,53 @@ bool checkPMT(int pmt, int low, int high) {
 
 	if (pmt >= low && pmt <= high) return true;
 	else return false;
+
+}
+// finds angles using dot product
+double Angles(double a[2], double b[2]){
+
+  double angle = 0;
+  double dot = a[0]*b[0] + a[1]*b[1];
+  double aval = sqrt( pow(a[0],2) + pow(a[1],2) );
+  double bval = sqrt( pow(b[0],2) + pow(b[1],2) );
+
+  angle = acos( dot/(aval*bval) );
+
+  return angle;
+
+}
+// Converts the cylindrical coordinates to unfolded cylinder
+void CylinderToSquare(double square[2], int tubeID, WCSimRootGeom *geo, double radius, double height){
+
+  // Find out where the PMT is in the tank
+  double tube[3];
+  int cylLoc = geo->GetPMT(tubeID).GetCylLoc();
+  tube[0] = geo->GetPMT(tubeID).GetPosition(0);
+  tube[1] = geo->GetPMT(tubeID).GetPosition(1);
+  tube[2] = geo->GetPMT(tubeID).GetPosition(2);
+
+  //Top (OD || ID)
+  if ( cylLoc == 5 || cylLoc == 0){
+          square[0] = tube[0];
+          square[1] = tube[1] + radius + height/2. + 1.;
+  }
+  //Bot (OD || ID)
+  else if ( cylLoc == 3 || cylLoc == 2){
+          square[0] = tube[0];
+          square[1] = -(height/2. +radius +tube[1] + 1. );
+  }
+  //Barrel OD
+  else {
+
+          double zero[2] = {0,-1};
+          double values[2] = {tube[0],tube[1]};
+          double angle = Angles(zero, values);
+
+          double length = angle*radius ;
+          if (tube[0]<0) length *= -1;
+          square[0] = length;
+          square[1] = tube[2];
+  }
 
 }
 
@@ -202,8 +246,6 @@ void MyMainFrame::Active(){
 	int numTriggersOD = wcsimRootOD->GetNumberOfEvents();
 	int numSubTriggersOD = wcsimRootOD->GetNumberOfSubEvents();
 
-	//event = ev;
-
 	if (verbosity) { // output the information of each event
 
 		 std::cout << "======================================================" << std::endl;
@@ -224,7 +266,6 @@ void MyMainFrame::Active(){
 	displayOD = (TH2D*) blankOD->Clone();
 
 	for (int nTrig = 0; nTrig < numTriggersID; nTrig++){
-
 
 		// ID
 		wcsimTriggerID = wcsimRootID->GetTrigger(nTrig);
@@ -264,8 +305,6 @@ void MyMainFrame::Active(){
 		numPMTsDigiHitOD = wcsimTriggerOD->GetNcherenkovdigihits(); //Returns the number of PMTs with a true hit (photon or dark noise) (QE applied)
 		// END OF ID
 
-
-
 		// Work out the number of photons that hit the PMTs
 		for (int i = 0; i < numPMTsHitID; i++){
 
@@ -293,30 +332,12 @@ void MyMainFrame::Active(){
 
 		digiHitsID += tmpDigiHitsID;
 		// Find the tube and work out its position
+		double square[2] = {-999999, -999999};
 		int tubeID = cherenkovDigiHitID->GetTubeId() -1;
-		double tube[3];
-		int cylLoc = geo->GetPMT(tubeID).GetCylLoc();
-		tube[0] = geo->GetPMT(tubeID).GetPosition(0);
-		tube[1] = geo->GetPMT(tubeID).GetPosition(1);
-		tube[2] = geo->GetPMT(tubeID).GetPosition(2);
-
-		//Top ID
-		if ( cylLoc == 0){
-			displayID->Fill(tube[0],tube[1] + RadiusID + HeightID/2,tmpDigiHitsID);
-		}
-		//Bot ID
-		else if ( cylLoc == 2){
-			displayID->Fill(tube[0],-(HeightID/2 +RadiusID +tube[1]),tmpDigiHitsID);
-		}
-		//Barrel ID
-		else {
-			double l = sqrt( pow((0 - tube[0]),2) + pow((-RadiusID - tube[1]),2));
-			double angle = 2*asin(l/(2*RadiusID));
-			double length = angle*RadiusID ;
-			if (tube[0]<0) length *= -1;
-			displayID->Fill( length, tube[2],tmpDigiHitsID);
-		}
-
+		CylinderToSquare(square, tubeID, geo, RadiusID, HeightID);
+		
+		displayID->Fill( square[0], square[1],tmpDigiHitsID);
+		
 
 		} // End of for loop working out number of digitized hits in PMTs
 
@@ -329,32 +350,11 @@ void MyMainFrame::Active(){
 		digiHitsOD += tmpDigiHitsOD;
 		// Find the tube and work out its position
 		int tubeOD = MAXPMT + cherenkovDigiHitOD->GetTubeId() -1; /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		double tube[3];
-		int cylLoc = geo->GetPMT(tubeOD).GetCylLoc();
-		tube[0] = geo->GetPMT(tubeOD).GetPosition(0);
-		tube[1] = geo->GetPMT(tubeOD).GetPosition(1);
-		tube[2] = geo->GetPMT(tubeOD).GetPosition(2);
+		double square[2] = {-999999, -999999};
+		CylinderToSquare(square, tubeOD, geo, RadiusOD, HeightOD);
 
-		//Top OD
-		if ( cylLoc == 5){
-			displayOD->Fill(tube[0],tube[1] + RadiusOD + HeightOD/2 + 100,tmpDigiHitsOD);
-		}
-		//Bot OD
-		else if ( cylLoc == 3){
-			displayOD->Fill(tube[0],-(HeightOD/2 +RadiusOD +tube[1] + 100 ),tmpDigiHitsOD);
-		}
-		//Barrel OD
-		else {
-
-			double l = sqrt( pow((0 - tube[0]),2) + pow((-RadiusOD - tube[1]),2));
-			double angle = 2*asin(l/(2*RadiusOD));
-			double length = angle*RadiusOD ;
-			if (tube[0]<0) length *= -1;
-			displayOD->Fill( length, tube[2],tmpDigiHitsOD);
-		}
-
-
-
+		displayOD->Fill( square[0], square[1],tmpDigiHitsOD);
+		
 		} // End of for loop working out number of digitized hits in PMTs
 		if (verbosity) { // output the information of each event
 			std::cout << "======================================================" << std::endl;
@@ -509,7 +509,7 @@ void MyMainFrame::Vision(){
 
 	// Remove Axis Lables
 	blankID->GetXaxis()->SetLabelOffset(999);
-  blankID->GetXaxis()->SetLabelSize(0);
+    blankID->GetXaxis()->SetLabelSize(0);
 	blankOD->GetXaxis()->SetLabelOffset(999);
 	blankOD->GetXaxis()->SetLabelSize(0);
 	blankID->GetYaxis()->SetLabelOffset(999);
@@ -583,63 +583,24 @@ void MyMainFrame::Vision(){
 
 	// Fill up the cylinder shape for OD hits
 	for ( int i = MAXPMT; i < MAXPMT + MAXPMTA; i++){
-		double tbe[3];
-		int cylLoc = geo->GetPMT(i).GetCylLoc();
-		tbe[0] = geo->GetPMT(i).GetPosition(0);
-		tbe[1] = geo->GetPMT(i).GetPosition(1);
-		tbe[2] = geo->GetPMT(i).GetPosition(2);
+		double square[2] = {-999999, -999999};
+		CylinderToSquare(square, i, geo, RadiusOD, HeightOD);
 
-		//Top
-		if ( cylLoc == 5){
-			blankOD->Fill(tbe[0],tbe[1] + RadiusOD + HeightOD/2 ,FILLW);
-		}
-		//Bot
-		else if ( cylLoc == 3){
-			blankOD->Fill(tbe[0],-HeightOD/2 - RadiusOD -tbe[1],FILLW);
-		}
-		//Barrel
-		else {
-			double l = sqrt( pow((0 - tbe[0]),2) + pow((-RadiusOD - tbe[1]),2));
-			double angle = 2*asin(l/(2*RadiusOD));
-			double length = angle*RadiusOD ;
-			if (tbe[0]<0) length *= -1;
-			blankOD->Fill( length, tbe[2],FILLW);
-		}
+		blankOD->Fill( square[0], square[1],FILLW);
+		
 
 	} // End of for loop filling OD PMT hits
 
 	// Fill up the cylinder shape for ID hits
 	for ( int i = 0; i < MAXPMT; i++){
-		double tbe[3];
-		int cylLoc = geo->GetPMT(i).GetCylLoc();
-		tbe[0] = geo->GetPMT(i).GetPosition(0);
-		tbe[1] = geo->GetPMT(i).GetPosition(1);
-		tbe[2] = geo->GetPMT(i).GetPosition(2);
-
-		//Top
-		if ( cylLoc == 0){
-			blankID->Fill(tbe[0],tbe[1] + RadiusID + HeightID/2 ,FILLW);
-		}
-		//Bot
-		else if ( cylLoc == 2){
-			blankID->Fill(tbe[0],-(HeightID/2 + RadiusID + tbe[1]),FILLW);
-		}
-		//Barrel
-		else {
-			double l = sqrt( pow((0 - tbe[0]),2) + pow((-RadiusID - tbe[1]),2));
-			double angle = 2*asin(l/(2*RadiusID));
-			double length = angle*RadiusID ;
-			if (tbe[0]<0) length *= -1;
-			blankID->Fill( length, tbe[2],FILLW);
-		}
-
-
+		double square[2] = {-999999, -999999};
+		CylinderToSquare(square, i, geo, RadiusID, HeightID);
+		blankID->Fill( square[0], square[1],FILLW);
+		
 	} // End of for loop filling ID PMT hits
 
 
 }
-
-
 
 MyMainFrame::MyMainFrame(string s) {
 
