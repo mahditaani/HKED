@@ -8,5 +8,6 @@ llib.C loads the WCSim ROOT libraries and HKED runs the event display.
 You can then run the code by typing:
 root -l -x llib.C 'HKED.C("wcsim.root")'
 where wcsim.root is the name of your wcsim output root file. 
-
-This program required you to be running the version of WCSim with the OD
+Alternatively just type:
+./run wcsim.root
+This program requires you to be running the version of WCSim with the OD

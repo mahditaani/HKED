@@ -413,6 +413,7 @@ void MyMainFrame::Active(){
 void MyMainFrame::Vision(){
 
 	gStyle->SetOptStat(0); // Remove stats from our histograms
+	gStyle->SetPalette(1); // Use the rainbow colour palette
 	// Some nicely formatted text options
 	std::cout << std::scientific; // This causes all numbers to be displayed in scientific notation.
 	std::cout << std::setprecision(2); // Sets the decimal precision (no more than two decimal places)
