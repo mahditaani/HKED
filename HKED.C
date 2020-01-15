@@ -382,10 +382,12 @@ void MyMainFrame::Active(){
 
 	if (odOn){
 		TLegend *legOD = new TLegend(0.7,0.7,1,1);legOD->SetHeader("OD","C");
+		canvasOD->SetLogz(kTRUE);
 		canvasOD->cd(); displayOD->Draw("COLZ"); legOD->Draw("same"); canvasOD->Update();
 	 }
 	if (idOn){
 		TLegend *legID = new TLegend(0.7,0.7,1,1);legID->SetHeader("ID","C");
+		canvasID->SetLogz(kTRUE);
 		canvasID->cd(); displayID->Draw("COLZ"); legID->Draw("same"); canvasID->Update();
 	}
 
