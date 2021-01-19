@@ -506,6 +506,8 @@ void MyMainFrame::Vision(){
 	displayOD = new TH2D ("displayOD", "displayOD", nBinOD, -dimX, dimX, nBinOD, -dimZ, dimZ);
 	blankID = new TH2D ("blankID", "", nBinID, -dimX, dimX, nBinID, -dimZ, dimZ);
 	blankOD = new TH2D ("blankOD", "", nBinOD, -dimX, dimX, nBinOD, -dimZ, dimZ);
+	blankOD->SetMinimum(0.0001); // make OD outline visible
+	blankID->SetMinimum(0.0001); // make ID outline visible
 
 	// Remove Axis Lables
 	blankID->GetXaxis()->SetLabelOffset(999);
